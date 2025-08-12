@@ -9,6 +9,9 @@
     <meta name="theme-color" content="#FF6B35">
 </head>
 <body>
+    <!-- Skip to main content link for keyboard users -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
     <!-- Main Header -->
     <header class="main-header">
         <div class="header-content">
@@ -53,7 +56,7 @@
     </nav>
 
     <!-- Main Content Container -->
-    <main class="main-content">
+    <main id="main-content" class="main-content">
         
         <!-- Equipment View -->
         <div id="equipment-view" class="view active">
@@ -207,6 +210,83 @@
         </div>
     </div>
 
+    <!-- Keyboard Help Modal -->
+    <div id="keyboard-help-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="keyboard-help-title">
+        <div class="modal-content keyboard-help-modal">
+            <div class="modal-header">
+                <h2 id="keyboard-help-title">Keyboard Shortcuts</h2>
+                <button class="modal-close" data-action="close-keyboard-help" aria-label="Close keyboard shortcuts dialog">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcuts-grid">
+                    <div class="shortcut-group">
+                        <h3>Navigation</h3>
+                        <div class="shortcut-item">
+                            <kbd>/</kbd>
+                            <span>Focus search input</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Escape</kbd>
+                            <span>Clear search or close modals</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>?</kbd>
+                            <span>Show this help dialog</span>
+                        </div>
+                    </div>
+                    
+                    <div class="shortcut-group">
+                        <h3>Zone Filters</h3>
+                        <div class="shortcut-item">
+                            <kbd>1</kbd>
+                            <span>Zone A (EGYM)</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>2</kbd>
+                            <span>Zone B (Hammer)</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>3</kbd>
+                            <span>Zone C (Nautilus)</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>4</kbd>
+                            <span>Zone D (Free Weights)</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>5</kbd>
+                            <span>Zone E (Cardio)</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>6</kbd>
+                            <span>Zone F (Functional)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="shortcut-group">
+                        <h3>Equipment Cards</h3>
+                        <div class="shortcut-item">
+                            <kbd>Tab</kbd>
+                            <span>Navigate through cards and buttons</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Enter</kbd>
+                            <span>Activate buttons or open details</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Space</kbd>
+                            <span>Activate buttons</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="keyboard-help-footer">
+                    <p><strong>Note:</strong> Keyboard shortcuts work when no input fields are focused and no modals are open.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Migration Modal -->
     <div id="migration-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="migration-title">
         <div class="modal-content migration-modal">
@@ -270,6 +350,7 @@
             <p class="footer-links">
                 <button type="button" class="link-button" data-action="export-data">Export Data</button> |
                 <button type="button" class="link-button" data-action="show-settings">Settings</button> |
+                <button type="button" class="link-button" data-action="show-keyboard-help">Keyboard Shortcuts</button> |
                 <button type="button" class="link-button" data-action="show-about">About</button>
             </p>
         </div>
