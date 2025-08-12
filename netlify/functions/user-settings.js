@@ -1,5 +1,6 @@
 const { getStore, connectLambda } = require("@netlify/blobs");
 const { createLogger, formatErrorResponse, formatSuccessResponse } = require("./_shared/logger");
+const { authenticateUser, createNewUser, checkRateLimit } = require("./_shared/auth");
 
 // Validation function (matches frontend validation)
 function validateSettings(settings) {
@@ -32,28 +33,8 @@ function getDefaultSettings() {
     };
 }
 
-// Generate or retrieve user ID from headers or create new one
-function getUserId(event) {
-    // Check for user ID in headers (future enhancement)
-    let userId = event.headers['x-user-id'];
-
-    // If not provided, check body for userId (for migration)
-    if (!userId && event.body) {
-        try {
-            const body = JSON.parse(event.body);
-            userId = body.userId;
-        } catch (e) {
-            // Ignore parse errors
-        }
-    }
-
-    // Generate new user ID if none provided
-    if (!userId) {
-        userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-    }
-
-    return userId;
-}
+// This function is deprecated - replaced by secure authentication
+// Kept for reference during migration period
 
 exports.handler = async(event, context) => {
     // Initialize Netlify Blobs in Lambda compatibility (Functions API v1)
@@ -65,7 +46,7 @@ exports.handler = async(event, context) => {
     
     const headers = {
         'Access-Control-Allow-Origin': process.env.CORS_ORIGIN || 'https://eos-fitness-tracker.netlify.app',
-        'Access-Control-Allow-Headers': 'Content-Type, x-user-id',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-user-token, x-user-id',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Content-Type': 'application/json'
     };
@@ -81,11 +62,43 @@ exports.handler = async(event, context) => {
     }
 
     try {
+        // Rate limiting check
+        const clientIp = event.headers['x-forwarded-for'] || event.headers['x-nf-client-connection-ip'] || 'unknown';
+        const rateLimit = checkRateLimit(clientIp, 60000, 30); // 30 requests per minute
+        
+        if (!rateLimit.allowed) {
+            logger.warn('Rate limit exceeded', { ip: clientIp });
+            const errorResponse = formatErrorResponse(logger, new Error('Rate limit exceeded'), 'Too many requests');
+            return {
+                statusCode: 429,
+                headers: {
+                    ...headers,
+                    'Retry-After': Math.ceil((rateLimit.resetTime - Date.now()) / 1000).toString()
+                },
+                body: JSON.stringify(errorResponse)
+            };
+        }
+
+        // Authenticate user
+        const auth = authenticateUser(event, logger);
+        if (!auth.authenticated) {
+            const errorResponse = formatErrorResponse(logger, new Error('Authentication failed'), auth.error || 'Authentication required');
+            return {
+                statusCode: 401,
+                headers,
+                body: JSON.stringify(errorResponse)
+            };
+        }
+
         const userStore = getStore("user-settings");
-        const userId = getUserId(event);
+        const userId = auth.userId;
         const settingsKey = `settings-${userId}`;
         
-        logger.userAction('settings-request', userId, { method: event.httpMethod });
+        logger.userAction('settings-request', userId, { 
+            method: event.httpMethod, 
+            isLegacy: auth.isLegacy,
+            remainingRequests: rateLimit.remaining 
+        });
 
         if (event.httpMethod === 'GET') {
             logger.dataOperation('read', 'user-settings', settingsKey, userId);
@@ -205,7 +218,16 @@ exports.handler = async(event, context) => {
         }
 
     } catch (error) {
-        logger.error('Unexpected error in user-settings function', error, { userId: getUserId(event) });
+        // Try to get userId for logging, but don't fail if auth fails
+        let userId = 'unknown';
+        try {
+            const auth = authenticateUser(event, logger);
+            if (auth.authenticated) userId = auth.userId;
+        } catch (authError) {
+            // Ignore auth errors in error handler
+        }
+
+        logger.error('Unexpected error in user-settings function', error, { userId });
 
         const errorResponse = formatErrorResponse(logger, error, 'An unexpected error occurred');
         return {
