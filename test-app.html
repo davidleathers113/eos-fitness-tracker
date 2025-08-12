@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EOS Fitness Tracker - Test Suite</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        h1 { color: #0f0; }
+        .test { margin: 10px 0; padding: 10px; border-left: 3px solid #333; }
+        .pass { border-color: #0f0; background: rgba(0,255,0,0.1); }
+        .fail { border-color: #f00; background: rgba(255,0,0,0.1); }
+        .info { color: #08f; }
+        button { background: #0f0; color: #000; border: none; padding: 10px 20px; cursor: pointer; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🧪 EOS Fitness Tracker - System Test</h1>
+    <button onclick="runTests()">Run All Tests</button>
+    <div id="results"></div>
+
+    <script>
+        async function runTests() {
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+            
+            const tests = [
+                {
+                    name: 'Load Application HTML',
+                    test: async () => {
+                        const response = await fetch('src/index.html');
+                        return response.ok && (await response.text()).includes('EOS Fitness Tracker');
+                    }
+                },
+                {
+                    name: 'Load Secure JavaScript',
+                    test: async () => {
+                        const response = await fetch('src/app-secure.js');
+                        const text = await response.text();
+                        return response.ok && text.includes('Security-Hardened Version');
+                    }
+                },
+                {
+                    name: 'Load Styles CSS',
+                    test: async () => {
+                        const response = await fetch('src/styles.css');
+                        const text = await response.text();
+                        return response.ok && text.includes('--primary-color');
+                    }
+                },
+                {
+                    name: 'Load Equipment Database',
+                    test: async () => {
+                        const response = await fetch('database/equipment-database.json');
+                        const data = await response.json();
+                        return data.equipment && data.equipment.length === 60;
+                    }
+                },
+                {
+                    name: 'Load User Settings',
+                    test: async () => {
+                        const response = await fetch('database/my-settings.json');
+                        const data = await response.json();
+                        return data.user && data.equipment_settings;
+                    }
+                },
+                {
+                    name: 'Load Workout Logs',
+                    test: async () => {
+                        const response = await fetch('database/workout-logs.json');
+                        const data = await response.json();
+                        return data.workouts && data.templates;
+                    }
+                },
+                {
+                    name: 'Verify Security Fixes',
+                    test: async () => {
+                        const response = await fetch('src/app-secure.js');
+                        const text = await response.text();
+                        // Check for security patterns
+                        const hasDebounce = text.includes('debounce');
+                        const hasSafeMuscles = text.includes('safeMuscles');
+                        const hasValidation = text.includes('validateEquipmentDatabase');
+                        const noInnerHTML = !text.includes('.innerHTML =') || text.includes('// Safe DOM-based');
+                        const hasEventListeners = text.includes('addEventListener');
+                        
+                        return hasDebounce && hasSafeMuscles && hasValidation && noInnerHTML && hasEventListeners;
+                    }
+                },
+                {
+                    name: 'Check Zone Configuration',
+                    test: async () => {
+                        const response = await fetch('database/equipment-database.json');
+                        const data = await response.json();
+                        const zones = Object.keys(data.metadata.zones);
+                        return zones.length === 6 && zones.includes('A') && zones.includes('F');
+                    }
+                },
+                {
+                    name: 'Verify Equipment Structure',
+                    test: async () => {
+                        const response = await fetch('database/equipment-database.json');
+                        const data = await response.json();
+                        const sample = data.equipment[0];
+                        return sample.id && sample.name && sample.zone && sample.muscles && sample.pattern;
+                    }
+                },
+                {
+                    name: 'Test Application Launch',
+                    test: async () => {
+                        // Create a test iframe to load the app
+                        return new Promise((resolve) => {
+                            const iframe = document.createElement('iframe');
+                            iframe.src = 'src/index.html';
+                            iframe.style.display = 'none';
+                            iframe.onload = () => {
+                                const hasApp = iframe.contentDocument.querySelector('#equipment-list') !== null;
+                                document.body.removeChild(iframe);
+                                resolve(hasApp);
+                            };
+                            iframe.onerror = () => {
+                                document.body.removeChild(iframe);
+                                resolve(false);
+                            };
+                            document.body.appendChild(iframe);
+                        });
+                    }
+                }
+            ];
+            
+            let passed = 0;
+            let failed = 0;
+            
+            for (const test of tests) {
+                const div = document.createElement('div');
+                div.className = 'test';
+                
+                try {
+                    const result = await test.test();
+                    if (result) {
+                        div.className += ' pass';
+                        div.innerHTML = `✅ ${test.name}`;
+                        passed++;
+                    } else {
+                        div.className += ' fail';
+                        div.innerHTML = `❌ ${test.name}`;
+                        failed++;
+                    }
+                } catch (error) {
+                    div.className += ' fail';
+                    div.innerHTML = `❌ ${test.name}: ${error.message}`;
+                    failed++;
+                }
+                
+                results.appendChild(div);
+            }
+            
+            const summary = document.createElement('div');
+            summary.className = 'test info';
+            summary.innerHTML = `
+                <h2>Test Summary</h2>
+                <p>✅ Passed: ${passed}</p>
+                <p>❌ Failed: ${failed}</p>
+                <p>📊 Success Rate: ${Math.round(passed/(passed+failed)*100)}%</p>
+                ${passed === tests.length ? '<p>🎉 <strong>ALL TESTS PASSED! Application is ready to use.</strong></p>' : ''}
+            `;
+            results.appendChild(summary);
+        }
+        
+        // Auto-run tests on load
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>

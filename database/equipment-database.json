@@ -1,0 +1,1940 @@
+{
+    "metadata": {
+        "gym": "EOS Fitness Lutz",
+        "last_updated": "2025-01-09",
+        "version": "2.0-complete",
+        "total_equipment": 60,
+        "zones": {
+            "A": "EGYM Smart Strength Area",
+            "B": "Hammer Strength Plate-Loaded Area",
+            "C": "Nautilus Selectorized Area",
+            "D": "Free Weight & Dumbbell Area",
+            "E": "Cardio Deck",
+            "F": "Functional Training Area"
+        }
+    },
+
+    "equipment": [{
+            "id": "EGYM-LC",
+            "name": "Leg Curl Machine (EGYM)",
+            "zone": "A",
+            "type": "ai_assisted",
+            "pattern": "hinge",
+            "muscles": {
+                "primary": ["hamstrings"],
+                "secondary": ["calves"]
+            },
+            "settings": {
+                "automatic": true,
+                "note": "Auto-adjusts with smart band"
+            },
+            "experience": "beginner",
+            "safety": {
+                "knee_friendly": true,
+                "lower_back_safe": true
+            },
+            "substitutes": [
+                { "id": "NAU-LC", "match": 0.9 },
+                { "id": "KNEEL-LC", "match": 0.85 },
+                { "id": "RDL", "match": 0.6 }
+            ],
+            "programming": {
+                "strength": "4-6 reps, 3-4 sets",
+                "hypertrophy": "8-12 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "EGYM-LE",
+            "name": "Leg Extension Machine (EGYM)",
+            "zone": "A",
+            "type": "ai_assisted",
+            "pattern": "knee_extension",
+            "muscles": {
+                "primary": ["quadriceps"],
+                "secondary": []
+            },
+            "settings": {
+                "automatic": true,
+                "note": "Auto-adjusts with smart band"
+            },
+            "experience": "beginner",
+            "safety": {
+                "patella_tracking": "monitor",
+                "acl_safe": true
+            },
+            "substitutes": [
+                { "id": "NAU-LE", "match": 0.9 },
+                { "id": "HS-LE", "match": 0.85 },
+                { "id": "SISSY-SQUAT", "match": 0.5 }
+            ],
+            "programming": {
+                "strength": "5-8 reps, 3-4 sets",
+                "hypertrophy": "10-15 reps, 3-4 sets",
+                "endurance": "15-25 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "EGYM-TRI",
+            "name": "Triceps Machine (EGYM)",
+            "zone": "A",
+            "type": "ai_assisted",
+            "pattern": "elbow_extension",
+            "muscles": {
+                "primary": ["triceps"],
+                "secondary": []
+            },
+            "settings": {
+                "automatic": true,
+                "note": "Auto-adjusts with smart band"
+            },
+            "experience": "beginner",
+            "safety": {
+                "elbow_friendly": true,
+                "shoulder_safe": true
+            },
+            "substitutes": [
+                { "id": "TRI-EXT", "match": 0.85 },
+                { "id": "CABLE-TRI", "match": 0.8 },
+                { "id": "DIP-MACH", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "5-8 reps, 3-4 sets",
+                "hypertrophy": "8-12 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "EGYM-BC",
+            "name": "Bicep Curl Machine (EGYM)",
+            "zone": "A",
+            "type": "ai_assisted",
+            "pattern": "elbow_flexion",
+            "muscles": {
+                "primary": ["biceps"],
+                "secondary": ["forearms"]
+            },
+            "settings": {
+                "automatic": true,
+                "note": "Auto-adjusts with smart band"
+            },
+            "experience": "beginner",
+            "safety": {
+                "elbow_friendly": true,
+                "wrist_neutral": true
+            },
+            "substitutes": [
+                { "id": "NAU-BC", "match": 0.9 },
+                { "id": "CABLE-CURL", "match": 0.8 },
+                { "id": "DB-CURL", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "5-8 reps, 3-4 sets",
+                "hypertrophy": "8-12 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "EGYM-SP",
+            "name": "Shoulder Press Machine (EGYM)",
+            "zone": "A",
+            "type": "ai_assisted",
+            "pattern": "vertical_push",
+            "muscles": {
+                "primary": ["shoulders"],
+                "secondary": ["triceps", "upper_chest"]
+            },
+            "settings": {
+                "automatic": true,
+                "note": "Auto-adjusts with smart band"
+            },
+            "experience": "beginner",
+            "safety": {
+                "shoulder_friendly": true,
+                "back_support": true
+            },
+            "substitutes": [
+                { "id": "NAU-SP", "match": 0.9 },
+                { "id": "HS-IL-SP", "match": 0.85 },
+                { "id": "DB-SP", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "4-6 reps, 3-4 sets",
+                "hypertrophy": "8-12 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "EGYM-ROW",
+            "name": "Seated Row Machine (EGYM)",
+            "zone": "A",
+            "type": "ai_assisted",
+            "pattern": "horizontal_pull",
+            "muscles": {
+                "primary": ["mid_back", "lats"],
+                "secondary": ["biceps", "rear_delts"]
+            },
+            "settings": {
+                "automatic": true,
+                "note": "Auto-adjusts with smart band"
+            },
+            "experience": "beginner",
+            "safety": {
+                "lower_back_support": true,
+                "shoulder_friendly": true
+            },
+            "substitutes": [
+                { "id": "NAU-ROW", "match": 0.9 },
+                { "id": "HS-IL-ROW", "match": 0.85 },
+                { "id": "CABLE-ROW", "match": 0.8 }
+            ],
+            "programming": {
+                "strength": "4-6 reps, 3-4 sets",
+                "hypertrophy": "8-12 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "EGYM-CP",
+            "name": "Chest Press Machine (EGYM)",
+            "zone": "A",
+            "type": "ai_assisted",
+            "pattern": "horizontal_push",
+            "muscles": {
+                "primary": ["chest"],
+                "secondary": ["triceps", "front_delts"]
+            },
+            "settings": {
+                "automatic": true,
+                "note": "Auto-adjusts with smart band"
+            },
+            "experience": "beginner",
+            "safety": {
+                "shoulder_friendly": true,
+                "back_support": true
+            },
+            "substitutes": [
+                { "id": "NAU-CP", "match": 0.9 },
+                { "id": "HS-IL-BP", "match": 0.85 },
+                { "id": "DB-BP", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "4-6 reps, 3-4 sets",
+                "hypertrophy": "8-12 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "ROMAN-CHAIR",
+            "name": "Roman Chair",
+            "zone": "F",
+            "type": "bodyweight",
+            "pattern": "core_extension",
+            "muscles": {
+                "primary": ["lower_back", "glutes"],
+                "secondary": ["hamstrings", "core"]
+            },
+            "settings": {
+                "pad_height": "adjust to hip",
+                "angle": "45 degrees",
+                "hold_time": "2 minutes"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "lower_back_caution": true,
+                "proper_form_critical": true
+            },
+            "substitutes": [
+                { "id": "NAU-BACK-EXT", "match": 0.8 },
+                { "id": "HYPEREXT", "match": 0.9 },
+                { "id": "GOOD-MORNING", "match": 0.6 }
+            ],
+            "programming": {
+                "strength": "weighted 8-10 reps",
+                "hypertrophy": "12-15 reps, 3 sets",
+                "endurance": "20-30 reps or 2min hold"
+            }
+        },
+
+        {
+            "id": "ADDUCTOR",
+            "name": "Adductor Machine",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "hip_adduction",
+            "muscles": {
+                "primary": ["adductors"],
+                "secondary": ["hip_stabilizers"]
+            },
+            "settings": {
+                "start_position": "wide",
+                "range": "adjustable"
+            },
+            "experience": "beginner",
+            "safety": {
+                "hip_friendly": true,
+                "groin_stretch": "monitor"
+            },
+            "substitutes": [
+                { "id": "CABLE-ADD", "match": 0.7 },
+                { "id": "SUMO-SQUAT", "match": 0.6 },
+                { "id": "COPENHAGEN", "match": 0.5 }
+            ],
+            "programming": {
+                "strength": "8-10 reps, 3 sets",
+                "hypertrophy": "12-15 reps, 3-4 sets",
+                "endurance": "15-25 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "ABDUCTOR",
+            "name": "Abductor Machine",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "hip_abduction",
+            "muscles": {
+                "primary": ["abductors", "glute_medius"],
+                "secondary": ["TFL"]
+            },
+            "settings": {
+                "start_position": "neutral",
+                "range": "adjustable"
+            },
+            "experience": "beginner",
+            "safety": {
+                "hip_friendly": true,
+                "IT_band": "monitor"
+            },
+            "substitutes": [
+                { "id": "CABLE-ABD", "match": 0.7 },
+                { "id": "BAND-WALKS", "match": 0.6 },
+                { "id": "CLAM-SHELLS", "match": 0.5 }
+            ],
+            "programming": {
+                "strength": "8-10 reps, 3 sets",
+                "hypertrophy": "12-15 reps, 3-4 sets",
+                "endurance": "15-25 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "BOOTY-BUILD",
+            "name": "Booty Builder (Hip Thrust Machine)",
+            "zone": "C",
+            "type": "plate_loaded",
+            "pattern": "hip_thrust",
+            "muscles": {
+                "primary": ["glutes"],
+                "secondary": ["hamstrings", "core"]
+            },
+            "settings": {
+                "pad_position": "hip_crease",
+                "foot_width": "shoulder_width"
+            },
+            "experience": "beginner",
+            "safety": {
+                "lower_back_safe": true,
+                "knee_friendly": true
+            },
+            "substitutes": [
+                { "id": "NAU-GLUTE", "match": 0.9 },
+                { "id": "BARBELL-HT", "match": 0.8 },
+                { "id": "BRIDGE", "match": 0.6 }
+            ],
+            "programming": {
+                "strength": "5-8 reps, 3-4 sets",
+                "hypertrophy": "10-15 reps, 3-4 sets",
+                "endurance": "15-25 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "LEG-PRESS",
+            "name": "Leg Press Machine (Standard)",
+            "zone": "C",
+            "type": "plate_loaded",
+            "pattern": "squat",
+            "muscles": {
+                "primary": ["quads", "glutes"],
+                "secondary": ["hamstrings", "calves"]
+            },
+            "settings": {
+                "back_angle": "adjustable",
+                "foot_position": "variable",
+                "safety_stops": "adjustable"
+            },
+            "experience": "beginner",
+            "safety": {
+                "knee_friendly": true,
+                "back_support": true
+            },
+            "substitutes": [
+                { "id": "EGYM-LP", "match": 0.9 },
+                { "id": "NAU-LP", "match": 0.9 },
+                { "id": "HACK-SQUAT", "match": 0.8 }
+            ],
+            "programming": {
+                "strength": "3-5 reps, 4-5 sets",
+                "hypertrophy": "8-12 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "GLUTE-PRESS",
+            "name": "Glute Press Machine",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "glute_isolation",
+            "muscles": {
+                "primary": ["glutes"],
+                "secondary": ["hamstrings"]
+            },
+            "settings": {
+                "foot_position": "high_and_wide",
+                "range": "full"
+            },
+            "experience": "beginner",
+            "safety": {
+                "lower_back_safe": true,
+                "knee_friendly": true
+            },
+            "substitutes": [
+                { "id": "BOOTY-BUILD", "match": 0.9 },
+                { "id": "NAU-GLUTE", "match": 0.95 },
+                { "id": "CABLE-PULL", "match": 0.6 }
+            ],
+            "programming": {
+                "strength": "6-8 reps, 3-4 sets",
+                "hypertrophy": "10-15 reps, 3-4 sets",
+                "endurance": "15-25 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "HS-LE",
+            "name": "Hammer Strength Leg Extension",
+            "zone": "B",
+            "type": "plate_loaded",
+            "pattern": "knee_extension",
+            "muscles": {
+                "primary": ["quadriceps"],
+                "secondary": []
+            },
+            "settings": {
+                "seat_back": "adjustable",
+                "pad_position": "above_ankle",
+                "start_angle": "adjustable"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "unilateral": true,
+                "knee_angle": "monitor"
+            },
+            "substitutes": [
+                { "id": "EGYM-LE", "match": 0.9 },
+                { "id": "NAU-LE", "match": 0.85 },
+                { "id": "BULGARIANS", "match": 0.5 }
+            ],
+            "programming": {
+                "strength": "5-8 reps, 3-4 sets",
+                "hypertrophy": "10-15 reps, 3-4 sets",
+                "endurance": "15-25 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "STAND-CALF",
+            "name": "Standing Calf Machine",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "ankle_extension",
+            "muscles": {
+                "primary": ["gastrocnemius"],
+                "secondary": ["soleus"]
+            },
+            "settings": {
+                "shoulder_pad": "height_adjustable",
+                "foot_position": "platform"
+            },
+            "experience": "beginner",
+            "safety": {
+                "ankle_friendly": true,
+                "back_neutral": true
+            },
+            "substitutes": [
+                { "id": "HORIZ-CALF", "match": 0.8 },
+                { "id": "LEG-PRESS-CALF", "match": 0.7 },
+                { "id": "DB-CALF", "match": 0.6 }
+            ],
+            "programming": {
+                "strength": "6-8 reps, 4 sets",
+                "hypertrophy": "12-15 reps, 3-4 sets",
+                "endurance": "20-30 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "HORIZ-CALF",
+            "name": "Horizontal Calf Machine",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "ankle_extension",
+            "muscles": {
+                "primary": ["soleus"],
+                "secondary": ["gastrocnemius"]
+            },
+            "settings": {
+                "seat_position": "adjustable",
+                "knee_pad": "adjustable"
+            },
+            "experience": "beginner",
+            "safety": {
+                "knee_bent": "targets_soleus",
+                "lower_back_safe": true
+            },
+            "substitutes": [
+                { "id": "STAND-CALF", "match": 0.8 },
+                { "id": "SEATED-CALF", "match": 0.95 },
+                { "id": "DONKEY-CALF", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "6-8 reps, 4 sets",
+                "hypertrophy": "12-15 reps, 3-4 sets",
+                "endurance": "20-30 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "DELT-RAISE",
+            "name": "Deltoid Raise Machine",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "shoulder_abduction",
+            "muscles": {
+                "primary": ["lateral_delts"],
+                "secondary": ["traps"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "arm_pad": "elbow_position"
+            },
+            "experience": "beginner",
+            "safety": {
+                "shoulder_friendly": true,
+                "controlled_motion": true
+            },
+            "substitutes": [
+                { "id": "CABLE-RAISE", "match": 0.8 },
+                { "id": "DB-RAISE", "match": 0.7 },
+                { "id": "UPRIGHT-ROW", "match": 0.5 }
+            ],
+            "programming": {
+                "strength": "6-8 reps, 3-4 sets",
+                "hypertrophy": "12-15 reps, 3-4 sets",
+                "endurance": "15-25 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "NAU-SP",
+            "name": "Shoulder Press Machine (Non-AI)",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "vertical_push",
+            "muscles": {
+                "primary": ["shoulders"],
+                "secondary": ["triceps", "upper_chest"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "back_angle": "fixed",
+                "handle_width": "fixed"
+            },
+            "experience": "beginner",
+            "safety": {
+                "shoulder_path": "fixed",
+                "back_support": true
+            },
+            "substitutes": [
+                { "id": "EGYM-SP", "match": 0.9 },
+                { "id": "HS-IL-SP", "match": 0.85 },
+                { "id": "DB-SP", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "4-6 reps, 3-4 sets",
+                "hypertrophy": "8-12 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "PULLOVER",
+            "name": "Pullover Machine",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "lat_isolation",
+            "muscles": {
+                "primary": ["lats"],
+                "secondary": ["serratus", "chest"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "arm_pad": "adjustable",
+                "range_limiter": "available"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "shoulder_flexibility": "required",
+                "lower_back": "monitor"
+            },
+            "substitutes": [
+                { "id": "CABLE-PULL", "match": 0.7 },
+                { "id": "DB-PULL", "match": 0.6 },
+                { "id": "STRAIGHT-ARM", "match": 0.8 }
+            ],
+            "programming": {
+                "strength": "6-8 reps, 3-4 sets",
+                "hypertrophy": "10-15 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "DELT-FLY",
+            "name": "Deltoid Fly Machine",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "rear_delt",
+            "muscles": {
+                "primary": ["rear_delts"],
+                "secondary": ["rhomboids", "mid_traps"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "arm_position": "adjustable",
+                "handle_type": "multiple"
+            },
+            "experience": "beginner",
+            "safety": {
+                "shoulder_friendly": true,
+                "posture_improvement": true
+            },
+            "substitutes": [
+                { "id": "PEC-FLY-REV", "match": 0.9 },
+                { "id": "CABLE-REV-FLY", "match": 0.8 },
+                { "id": "DB-REV-FLY", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "8-10 reps, 3-4 sets",
+                "hypertrophy": "12-15 reps, 3-4 sets",
+                "endurance": "15-25 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "PEC-FLY",
+            "name": "Pec Fly / Rear Delt Machine",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "chest_isolation",
+            "muscles": {
+                "primary": ["chest", "rear_delts"],
+                "secondary": ["front_delts"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "arm_position": "dual_function",
+                "range": "adjustable"
+            },
+            "experience": "beginner",
+            "safety": {
+                "shoulder_friendly": true,
+                "dual_purpose": true
+            },
+            "substitutes": [
+                { "id": "CABLE-FLY", "match": 0.8 },
+                { "id": "DB-FLY", "match": 0.7 },
+                { "id": "CABLE-CROSS", "match": 0.75 }
+            ],
+            "programming": {
+                "strength": "6-8 reps, 3-4 sets",
+                "hypertrophy": "10-15 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "NAU-CP",
+            "name": "Chest Press Machine (Standard)",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "horizontal_push",
+            "muscles": {
+                "primary": ["chest"],
+                "secondary": ["triceps", "front_delts"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "back_support": "fixed",
+                "handle_path": "converging"
+            },
+            "experience": "beginner",
+            "safety": {
+                "shoulder_friendly": true,
+                "stable_path": true
+            },
+            "substitutes": [
+                { "id": "EGYM-CP", "match": 0.9 },
+                { "id": "HS-IL-BP", "match": 0.85 },
+                { "id": "DB-BP", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "4-6 reps, 3-4 sets",
+                "hypertrophy": "8-12 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "NAU-ROW",
+            "name": "Row Machine (Standard)",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "horizontal_pull",
+            "muscles": {
+                "primary": ["mid_back", "lats"],
+                "secondary": ["biceps", "rear_delts"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "chest_pad": "adjustable",
+                "handle_type": "multiple"
+            },
+            "experience": "beginner",
+            "safety": {
+                "lower_back_support": true,
+                "shoulder_friendly": true
+            },
+            "substitutes": [
+                { "id": "EGYM-ROW", "match": 0.9 },
+                { "id": "HS-IL-ROW", "match": 0.85 },
+                { "id": "CABLE-ROW", "match": 0.8 }
+            ],
+            "programming": {
+                "strength": "4-6 reps, 3-4 sets",
+                "hypertrophy": "8-12 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "NAU-LAT",
+            "name": "Lat Pull Down Machine (Standard)",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "vertical_pull",
+            "muscles": {
+                "primary": ["lats"],
+                "secondary": ["biceps", "mid_back"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "thigh_pad": "adjustable",
+                "handle_type": "multiple"
+            },
+            "experience": "beginner",
+            "safety": {
+                "shoulder_friendly": true,
+                "proper_form": "critical"
+            },
+            "substitutes": [
+                { "id": "HS-IL-FLPD", "match": 0.85 },
+                { "id": "CABLE-LAT", "match": 0.9 },
+                { "id": "PULLUP-ASSIST", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "4-6 reps, 3-4 sets",
+                "hypertrophy": "8-12 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "NAU-LC",
+            "name": "Leg Curl Machine (Standard)",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "knee_flexion",
+            "muscles": {
+                "primary": ["hamstrings"],
+                "secondary": ["calves"]
+            },
+            "settings": {
+                "back_angle": "adjustable",
+                "ankle_pad": "adjustable",
+                "range": "adjustable"
+            },
+            "experience": "beginner",
+            "safety": {
+                "knee_friendly": true,
+                "lower_back_safe": true
+            },
+            "substitutes": [
+                { "id": "EGYM-LC", "match": 0.9 },
+                { "id": "KNEEL-LC", "match": 0.85 },
+                { "id": "NORDIC", "match": 0.6 }
+            ],
+            "programming": {
+                "strength": "5-8 reps, 3-4 sets",
+                "hypertrophy": "10-15 reps, 3-4 sets",
+                "endurance": "15-25 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "NAU-LE",
+            "name": "Leg Extension Machine (Standard)",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "knee_extension",
+            "muscles": {
+                "primary": ["quadriceps"],
+                "secondary": []
+            },
+            "settings": {
+                "back_angle": "adjustable",
+                "ankle_pad": "adjustable",
+                "range": "adjustable"
+            },
+            "experience": "beginner",
+            "safety": {
+                "bilateral": true,
+                "knee_tracking": "monitor"
+            },
+            "substitutes": [
+                { "id": "EGYM-LE", "match": 0.9 },
+                { "id": "HS-LE", "match": 0.85 },
+                { "id": "TERMINAL-KE", "match": 0.5 }
+            ],
+            "programming": {
+                "strength": "5-8 reps, 3-4 sets",
+                "hypertrophy": "10-15 reps, 3-4 sets",
+                "endurance": "15-25 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "KNEEL-LC",
+            "name": "Kneeling Leg Curl",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "knee_flexion",
+            "muscles": {
+                "primary": ["hamstrings"],
+                "secondary": ["glutes"]
+            },
+            "settings": {
+                "pad_height": "adjustable",
+                "ankle_roller": "adjustable"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "unilateral": "optional",
+                "hip_position": "neutral"
+            },
+            "substitutes": [
+                { "id": "NAU-LC", "match": 0.85 },
+                { "id": "EGYM-LC", "match": 0.9 },
+                { "id": "SWISS-CURL", "match": 0.6 }
+            ],
+            "programming": {
+                "strength": "5-8 reps, 3-4 sets",
+                "hypertrophy": "10-15 reps, 3-4 sets",
+                "endurance": "15-25 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "BIKES",
+            "name": "Exercise Bikes",
+            "zone": "E",
+            "type": "cardio",
+            "pattern": "cyclical",
+            "muscles": {
+                "primary": ["quads", "cardiovascular"],
+                "secondary": ["hamstrings", "calves"]
+            },
+            "settings": {
+                "seat_height": "hip_level",
+                "resistance": "1-25",
+                "programs": "multiple"
+            },
+            "experience": "beginner",
+            "safety": {
+                "low_impact": true,
+                "knee_friendly": true
+            },
+            "substitutes": [
+                { "id": "SPIN-BIKE", "match": 0.9 },
+                { "id": "RECUMBENT", "match": 0.8 },
+                { "id": "ELLIPTICAL", "match": 0.6 }
+            ],
+            "programming": {
+                "hiit": "30s sprint/30s rest x 10",
+                "steady": "20-45 minutes",
+                "endurance": "45-90 minutes"
+            }
+        },
+
+        {
+            "id": "TREADMILL",
+            "name": "Treadmills",
+            "zone": "E",
+            "type": "cardio",
+            "pattern": "locomotion",
+            "muscles": {
+                "primary": ["cardiovascular", "legs"],
+                "secondary": ["core"]
+            },
+            "settings": {
+                "speed": "0-12mph",
+                "incline": "0-15%",
+                "programs": "multiple"
+            },
+            "experience": "beginner",
+            "safety": {
+                "impact": "moderate_to_high",
+                "emergency_stop": true
+            },
+            "substitutes": [
+                { "id": "ELLIPTICAL", "match": 0.6 },
+                { "id": "BIKES", "match": 0.5 },
+                { "id": "ROWING", "match": 0.5 }
+            ],
+            "programming": {
+                "hiit": "1min sprint/1min walk x 10",
+                "steady": "20-60 minutes",
+                "incline_walk": "15% grade, 3-4mph"
+            }
+        },
+
+        {
+            "id": "NAU-BC",
+            "name": "Biceps Curl (Standard)",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "elbow_flexion",
+            "muscles": {
+                "primary": ["biceps"],
+                "secondary": ["forearms"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "arm_pad": "adjustable"
+            },
+            "experience": "beginner",
+            "safety": {
+                "elbow_support": true,
+                "wrist_neutral": "optional"
+            },
+            "substitutes": [
+                { "id": "EGYM-BC", "match": 0.9 },
+                { "id": "CABLE-CURL", "match": 0.8 },
+                { "id": "PREACHER", "match": 0.85 }
+            ],
+            "programming": {
+                "strength": "5-8 reps, 3-4 sets",
+                "hypertrophy": "8-12 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "DIP-MACH",
+            "name": "Dip Machine",
+            "zone": "C",
+            "type": "assisted",
+            "pattern": "vertical_push",
+            "muscles": {
+                "primary": ["triceps", "lower_chest"],
+                "secondary": ["front_delts"]
+            },
+            "settings": {
+                "assistance": "adjustable_weight",
+                "handle_width": "fixed"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "shoulder_angle": "monitor",
+                "assistance_available": true
+            },
+            "substitutes": [
+                { "id": "TRI-EXT", "match": 0.7 },
+                { "id": "CLOSE-BP", "match": 0.6 },
+                { "id": "DIAMOND-PU", "match": 0.5 }
+            ],
+            "programming": {
+                "strength": "3-6 reps, 3-4 sets",
+                "hypertrophy": "8-12 reps, 3-4 sets",
+                "endurance": "15-20 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "TRI-EXT",
+            "name": "Triceps Extension",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "elbow_extension",
+            "muscles": {
+                "primary": ["triceps"],
+                "secondary": []
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "back_support": "adjustable",
+                "handle_type": "various"
+            },
+            "experience": "beginner",
+            "safety": {
+                "elbow_friendly": true,
+                "shoulder_stable": true
+            },
+            "substitutes": [
+                { "id": "EGYM-TRI", "match": 0.9 },
+                { "id": "CABLE-TRI", "match": 0.85 },
+                { "id": "OH-TRI", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "5-8 reps, 3-4 sets",
+                "hypertrophy": "10-15 reps, 3-4 sets",
+                "endurance": "15-25 reps, 2-3 sets"
+            }
+        },
+
+        {
+            "id": "JACOBS",
+            "name": "Jacob's Ladder",
+            "zone": "E",
+            "type": "cardio",
+            "pattern": "climbing",
+            "muscles": {
+                "primary": ["full_body"],
+                "secondary": ["cardiovascular"]
+            },
+            "settings": {
+                "speed": "self_paced",
+                "angle": "40_degrees",
+                "belt": "waist_attachment"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "low_impact": true,
+                "high_intensity": true
+            },
+            "substitutes": [
+                { "id": "STAIRMASTER", "match": 0.7 },
+                { "id": "VERSA", "match": 0.6 },
+                { "id": "ROWING", "match": 0.5 }
+            ],
+            "programming": {
+                "hiit": "30s climb/30s rest x 10",
+                "steady": "5-20 minutes",
+                "intervals": "2min mod/1min hard x 5"
+            }
+        },
+
+        {
+            "id": "STAIRMASTER",
+            "name": "Stair Master",
+            "zone": "E",
+            "type": "cardio",
+            "pattern": "stepping",
+            "muscles": {
+                "primary": ["glutes", "quads"],
+                "secondary": ["calves", "cardiovascular"]
+            },
+            "settings": {
+                "speed": "1-20",
+                "programs": "multiple",
+                "side_rails": "available"
+            },
+            "experience": "beginner",
+            "safety": {
+                "knee_impact": "moderate",
+                "balance_required": true
+            },
+            "substitutes": [
+                { "id": "JACOBS", "match": 0.7 },
+                { "id": "INCLINE-WALK", "match": 0.6 },
+                { "id": "BOX-STEP", "match": 0.5 }
+            ],
+            "programming": {
+                "hiit": "1min fast/1min slow x 10",
+                "steady": "20-45 minutes",
+                "glute_focus": "skip_steps"
+            }
+        },
+
+        {
+            "id": "ROWING",
+            "name": "Row Machine (Cardio)",
+            "zone": "E",
+            "type": "cardio",
+            "pattern": "rowing",
+            "muscles": {
+                "primary": ["back", "legs", "cardiovascular"],
+                "secondary": ["core", "arms"]
+            },
+            "settings": {
+                "resistance": "1-10",
+                "damper": "adjustable",
+                "foot_straps": "adjustable"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "low_impact": true,
+                "technique_critical": true
+            },
+            "substitutes": [
+                { "id": "BIKES", "match": 0.5 },
+                { "id": "ELLIPTICAL", "match": 0.5 },
+                { "id": "SKI-ERG", "match": 0.7 }
+            ],
+            "programming": {
+                "hiit": "250m sprints x 8",
+                "steady": "5000-10000m",
+                "intervals": "500m x 5"
+            }
+        },
+
+        {
+            "id": "PB-EXTREME",
+            "name": "PB Extreme",
+            "zone": "F",
+            "type": "functional",
+            "pattern": "various",
+            "muscles": {
+                "primary": ["full_body"],
+                "secondary": ["power_development"]
+            },
+            "settings": {
+                "modular": true,
+                "attachments": "multiple"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "versatile": true,
+                "space_required": true
+            },
+            "substitutes": [
+                { "id": "SYNRGY360", "match": 0.7 },
+                { "id": "CABLE-STATION", "match": 0.6 },
+                { "id": "FREE-WEIGHTS", "match": 0.5 }
+            ],
+            "programming": {
+                "circuit": "8 stations, 45s each",
+                "strength": "compound movements",
+                "power": "explosive exercises"
+            }
+        },
+
+        {
+            "id": "ELLIPTICAL",
+            "name": "Elliptical",
+            "zone": "E",
+            "type": "cardio",
+            "pattern": "elliptical",
+            "muscles": {
+                "primary": ["legs", "cardiovascular"],
+                "secondary": ["arms", "core"]
+            },
+            "settings": {
+                "resistance": "1-20",
+                "incline": "adjustable",
+                "programs": "multiple"
+            },
+            "experience": "beginner",
+            "safety": {
+                "no_impact": true,
+                "knee_friendly": true
+            },
+            "substitutes": [
+                { "id": "BIKES", "match": 0.7 },
+                { "id": "HELIX", "match": 0.6 },
+                { "id": "ROWING", "match": 0.5 }
+            ],
+            "programming": {
+                "hiit": "1min hard/1min easy x 10",
+                "steady": "30-60 minutes",
+                "intervals": "5min stages"
+            }
+        },
+
+        {
+            "id": "HELIX",
+            "name": "Helix Lateral Trainer",
+            "zone": "E",
+            "type": "cardio",
+            "pattern": "lateral",
+            "muscles": {
+                "primary": ["glutes", "outer_thighs"],
+                "secondary": ["core", "inner_thighs"]
+            },
+            "settings": {
+                "resistance": "1-20",
+                "programs": "multiple"
+            },
+            "experience": "beginner",
+            "safety": {
+                "knee_friendly": true,
+                "unique_motion": true
+            },
+            "substitutes": [
+                { "id": "ELLIPTICAL", "match": 0.6 },
+                { "id": "LATERAL-LUNGE", "match": 0.5 },
+                { "id": "SKATING", "match": 0.4 }
+            ],
+            "programming": {
+                "hiit": "30s sprint/30s rest x 15",
+                "steady": "20-40 minutes",
+                "glute_focus": "high_resistance"
+            }
+        },
+
+        {
+            "id": "NAU-DAP",
+            "name": "Nautilus Dual Adjustable Pulley",
+            "zone": "C",
+            "type": "cable",
+            "pattern": "various",
+            "muscles": {
+                "primary": ["depends_on_exercise"],
+                "secondary": ["stabilizers"]
+            },
+            "settings": {
+                "height": "17_positions",
+                "handles": "various",
+                "weight": "dual_stacks"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "versatile": true,
+                "bilateral_unilateral": true
+            },
+            "substitutes": [
+                { "id": "SYNRGY360", "match": 0.8 },
+                { "id": "CABLE-CROSS", "match": 0.9 },
+                { "id": "FREE-WEIGHTS", "match": 0.5 }
+            ],
+            "programming": {
+                "depends": "on_exercise_selection"
+            }
+        },
+
+        {
+            "id": "NAU-HS",
+            "name": "Nautilus Human Sport",
+            "zone": "C",
+            "type": "cable",
+            "pattern": "natural_movement",
+            "muscles": {
+                "primary": ["various"],
+                "secondary": ["stabilizers"]
+            },
+            "settings": {
+                "dual_weight": true,
+                "cable_motion": "free",
+                "positions": "multiple"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "natural_paths": true,
+                "progressive": true
+            },
+            "substitutes": [
+                { "id": "NAU-DAP", "match": 0.85 },
+                { "id": "SYNRGY360", "match": 0.8 },
+                { "id": "CABLES", "match": 0.7 }
+            ],
+            "programming": {
+                "sport_specific": "movement_patterns",
+                "functional": "multi_planar"
+            }
+        },
+
+        {
+            "id": "SYNRGY360",
+            "name": "Life Fitness Synrgy360",
+            "zone": "F",
+            "type": "multi_station",
+            "pattern": "various",
+            "muscles": {
+                "primary": ["full_body"],
+                "secondary": ["depends_on_station"]
+            },
+            "settings": {
+                "stations": "multiple",
+                "attachments": "various",
+                "group_training": true
+            },
+            "experience": "intermediate",
+            "safety": {
+                "supervised": "recommended",
+                "versatile": true
+            },
+            "substitutes": [
+                { "id": "NAU-DAP", "match": 0.7 },
+                { "id": "PB-EXTREME", "match": 0.7 },
+                { "id": "CABLE-JUNGLE", "match": 0.6 }
+            ],
+            "programming": {
+                "circuit": "station_rotation",
+                "group": "4-8_people",
+                "functional": "TRX_compatible"
+            }
+        },
+
+        {
+            "id": "MED-BALLS",
+            "name": "Medicine Balls",
+            "zone": "F",
+            "type": "free_weight",
+            "pattern": "ballistic",
+            "muscles": {
+                "primary": ["core", "full_body"],
+                "secondary": ["power"]
+            },
+            "settings": {
+                "weight": "4-30lbs",
+                "type": "rubber_leather"
+            },
+            "experience": "beginner",
+            "safety": {
+                "space_needed": true,
+                "controlled_throws": true
+            },
+            "substitutes": [
+                { "id": "SLAM-BALLS", "match": 0.8 },
+                { "id": "KETTLEBELLS", "match": 0.5 },
+                { "id": "PLATES", "match": 0.4 }
+            ],
+            "programming": {
+                "power": "3-5 reps, explosive",
+                "conditioning": "30-60s intervals",
+                "core": "10-20 reps"
+            }
+        },
+
+        {
+            "id": "WAR-ROPES",
+            "name": "War Ropes (Battle Ropes)",
+            "zone": "F",
+            "type": "functional",
+            "pattern": "wave",
+            "muscles": {
+                "primary": ["shoulders", "core"],
+                "secondary": ["cardio", "grip"]
+            },
+            "settings": {
+                "length": "30-50ft",
+                "thickness": "1.5-2inch",
+                "anchor": "floor_wall"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "shoulder_endurance": true,
+                "space_required": true
+            },
+            "substitutes": [
+                { "id": "SLED", "match": 0.5 },
+                { "id": "ROWING", "match": 0.6 },
+                { "id": "KB-SWINGS", "match": 0.6 }
+            ],
+            "programming": {
+                "hiit": "20s on/10s off x 8",
+                "endurance": "3-5min continuous",
+                "power": "10-15s max effort"
+            }
+        },
+
+        {
+            "id": "KETTLEBELLS",
+            "name": "Kettle Bells",
+            "zone": "F",
+            "type": "free_weight",
+            "pattern": "ballistic",
+            "muscles": {
+                "primary": ["full_body"],
+                "secondary": ["power", "cardio"]
+            },
+            "settings": {
+                "weight": "5-100lbs",
+                "increments": "varied"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "technique_critical": true,
+                "space_needed": true
+            },
+            "substitutes": [
+                { "id": "DUMBBELLS", "match": 0.6 },
+                { "id": "MED-BALLS", "match": 0.5 },
+                { "id": "CABLES", "match": 0.4 }
+            ],
+            "programming": {
+                "strength": "3-5 reps",
+                "power": "6-8 reps explosive",
+                "conditioning": "10-20 reps"
+            }
+        },
+
+        {
+            "id": "ABCOASTER",
+            "name": "AbCoaster",
+            "zone": "F",
+            "type": "ab_machine",
+            "pattern": "knee_raise",
+            "muscles": {
+                "primary": ["abs"],
+                "secondary": ["hip_flexors"]
+            },
+            "settings": {
+                "weight": "optional_plates",
+                "seat_angle": "straight_oblique"
+            },
+            "experience": "beginner",
+            "safety": {
+                "back_friendly": true,
+                "knee_pads": true
+            },
+            "substitutes": [
+                { "id": "HOIST-ABS", "match": 0.8 },
+                { "id": "NAU-CRUNCH", "match": 0.7 },
+                { "id": "KNEE-RAISE", "match": 0.6 }
+            ],
+            "programming": {
+                "strength": "8-10 reps weighted",
+                "hypertrophy": "12-20 reps",
+                "endurance": "20-30 reps"
+            }
+        },
+
+        {
+            "id": "HOIST-ABS",
+            "name": "HoistFitness ROC-ABS",
+            "zone": "C",
+            "type": "ab_machine",
+            "pattern": "crunch",
+            "muscles": {
+                "primary": ["abs"],
+                "secondary": ["obliques"]
+            },
+            "settings": {
+                "rocking_motion": true,
+                "pad_adjustment": "multiple",
+                "seat_lock": "optional"
+            },
+            "experience": "beginner",
+            "safety": {
+                "spine_support": true,
+                "controlled_motion": true
+            },
+            "substitutes": [
+                { "id": "ABCOASTER", "match": 0.8 },
+                { "id": "NAU-CRUNCH", "match": 0.85 },
+                { "id": "CABLE-CRUNCH", "match": 0.6 }
+            ],
+            "programming": {
+                "strength": "8-10 reps weighted",
+                "hypertrophy": "15-20 reps",
+                "endurance": "25-30 reps"
+            }
+        },
+
+        {
+            "id": "NAU-CRUNCH",
+            "name": "Nautilus Abdominal Crunch",
+            "zone": "C",
+            "type": "ab_machine",
+            "pattern": "crunch",
+            "muscles": {
+                "primary": ["abs"],
+                "secondary": []
+            },
+            "settings": {
+                "seat_adjustment": "height",
+                "pad_position": "chest",
+                "range": "adjustable"
+            },
+            "experience": "beginner",
+            "safety": {
+                "neck_support": true,
+                "controlled_path": true
+            },
+            "substitutes": [
+                { "id": "HOIST-ABS", "match": 0.85 },
+                { "id": "ABCOASTER", "match": 0.7 },
+                { "id": "PLANK", "match": 0.5 }
+            ],
+            "programming": {
+                "strength": "8-10 reps",
+                "hypertrophy": "15-25 reps",
+                "endurance": "25-40 reps"
+            }
+        },
+
+        {
+            "id": "NAU-ROTARY",
+            "name": "Nautilus Rotary Torso",
+            "zone": "C",
+            "type": "ab_machine",
+            "pattern": "rotation",
+            "muscles": {
+                "primary": ["obliques"],
+                "secondary": ["core"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "range": "adjustable",
+                "start_position": "left_right"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "spine_rotation": "controlled",
+                "lower_back": "monitor"
+            },
+            "substitutes": [
+                { "id": "CABLE-WOOD", "match": 0.7 },
+                { "id": "RUSSIAN-TWIST", "match": 0.6 },
+                { "id": "PALLOF", "match": 0.5 }
+            ],
+            "programming": {
+                "strength": "8-10 reps each side",
+                "hypertrophy": "12-15 reps each",
+                "endurance": "20-25 reps each"
+            }
+        },
+
+        {
+            "id": "NAU-BACK-EXT",
+            "name": "Nautilus Back Extension",
+            "zone": "C",
+            "type": "selectorized",
+            "pattern": "hip_extension",
+            "muscles": {
+                "primary": ["erector_spinae"],
+                "secondary": ["glutes", "hamstrings"]
+            },
+            "settings": {
+                "pad_position": "adjustable",
+                "range_limiter": "available",
+                "foot_position": "fixed"
+            },
+            "experience": "beginner",
+            "safety": {
+                "lower_back": "strengthen",
+                "controlled_motion": true
+            },
+            "substitutes": [
+                { "id": "ROMAN-CHAIR", "match": 0.8 },
+                { "id": "HYPEREXT", "match": 0.85 },
+                { "id": "GOOD-MORNING", "match": 0.6 }
+            ],
+            "programming": {
+                "strength": "8-10 reps weighted",
+                "hypertrophy": "12-15 reps",
+                "endurance": "20-30 reps"
+            }
+        },
+
+        {
+            "id": "NAU-ASSIST",
+            "name": "Nautilus Chin/Dip Assist",
+            "zone": "C",
+            "type": "assisted",
+            "pattern": "vertical_pull_push",
+            "muscles": {
+                "primary": ["lats", "triceps"],
+                "secondary": ["biceps", "chest"]
+            },
+            "settings": {
+                "weight_assist": "adjustable",
+                "knee_pad": "height_adjustable",
+                "handles": "multiple_grips"
+            },
+            "experience": "beginner",
+            "safety": {
+                "progression_friendly": true,
+                "joint_safe": true
+            },
+            "substitutes": [
+                { "id": "BAND-ASSIST", "match": 0.7 },
+                { "id": "NAU-LAT", "match": 0.6 },
+                { "id": "NEGATIVES", "match": 0.5 }
+            ],
+            "programming": {
+                "strength": "3-5 reps less assist",
+                "hypertrophy": "8-12 reps moderate",
+                "endurance": "15-20 reps minimal"
+            }
+        },
+
+        {
+            "id": "NAU-GLUTE",
+            "name": "Nautilus Glute Drive",
+            "zone": "C",
+            "type": "plate_loaded",
+            "pattern": "hip_thrust",
+            "muscles": {
+                "primary": ["glutes"],
+                "secondary": ["hamstrings", "core"]
+            },
+            "settings": {
+                "belt_position": "hips",
+                "foot_platform": "adjustable",
+                "back_support": "padded"
+            },
+            "experience": "beginner",
+            "safety": {
+                "lower_back_safe": true,
+                "knee_friendly": true
+            },
+            "substitutes": [
+                { "id": "BOOTY-BUILD", "match": 0.95 },
+                { "id": "BARBELL-HT", "match": 0.7 },
+                { "id": "GLUTE-BRIDGE", "match": 0.6 }
+            ],
+            "programming": {
+                "strength": "5-8 reps heavy",
+                "hypertrophy": "10-15 reps",
+                "endurance": "20-30 reps"
+            }
+        },
+
+        {
+            "id": "HS-IL-FLPD",
+            "name": "Hammer Strength ISO-Lateral Front Lat Pulldown",
+            "zone": "B",
+            "type": "plate_loaded",
+            "pattern": "vertical_pull",
+            "muscles": {
+                "primary": ["lats"],
+                "secondary": ["biceps", "mid_back"]
+            },
+            "settings": {
+                "seat_height": "1-8",
+                "thigh_pad": "adjustable",
+                "handles": "neutral_wide"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "unilateral": true,
+                "shoulder_friendly": true
+            },
+            "substitutes": [
+                { "id": "NAU-LAT", "match": 0.85 },
+                { "id": "CABLE-LAT", "match": 0.8 },
+                { "id": "PULLUPS", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "4-6 reps",
+                "hypertrophy": "8-12 reps",
+                "endurance": "15-20 reps"
+            }
+        },
+
+        {
+            "id": "HS-IL-SP",
+            "name": "Hammer Strength ISO-Lateral Shoulder Press",
+            "zone": "B",
+            "type": "plate_loaded",
+            "pattern": "vertical_push",
+            "muscles": {
+                "primary": ["shoulders"],
+                "secondary": ["triceps", "upper_chest"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "back_angle": "fixed",
+                "handles": "converging"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "unilateral": true,
+                "shoulder_path": "natural"
+            },
+            "substitutes": [
+                { "id": "NAU-SP", "match": 0.85 },
+                { "id": "EGYM-SP", "match": 0.9 },
+                { "id": "DB-SP", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "4-6 reps",
+                "hypertrophy": "8-12 reps",
+                "endurance": "15-20 reps"
+            }
+        },
+
+        {
+            "id": "HS-IL-LOWROW",
+            "name": "Hammer Strength ISO-Lateral Low Row",
+            "zone": "B",
+            "type": "plate_loaded",
+            "pattern": "horizontal_pull",
+            "muscles": {
+                "primary": ["lower_lats", "mid_back"],
+                "secondary": ["biceps", "rear_delts"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "chest_pad": "adjustable",
+                "handles": "multiple_grips"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "unilateral": true,
+                "back_support": true
+            },
+            "substitutes": [
+                { "id": "HS-IL-ROW", "match": 0.9 },
+                { "id": "CABLE-LOW-ROW", "match": 0.8 },
+                { "id": "T-BAR", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "4-6 reps",
+                "hypertrophy": "8-12 reps",
+                "endurance": "15-20 reps"
+            }
+        },
+
+        {
+            "id": "HS-IL-HIROW",
+            "name": "Hammer Strength ISO-Lateral High Row",
+            "zone": "B",
+            "type": "plate_loaded",
+            "pattern": "horizontal_pull",
+            "muscles": {
+                "primary": ["upper_back", "rear_delts"],
+                "secondary": ["biceps", "traps"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "chest_pad": "adjustable",
+                "handles": "wide_neutral"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "unilateral": true,
+                "posture_improvement": true
+            },
+            "substitutes": [
+                { "id": "FACE-PULLS", "match": 0.7 },
+                { "id": "CABLE-HIGH-ROW", "match": 0.8 },
+                { "id": "WIDE-ROW", "match": 0.75 }
+            ],
+            "programming": {
+                "strength": "5-8 reps",
+                "hypertrophy": "10-15 reps",
+                "endurance": "15-25 reps"
+            }
+        },
+
+        {
+            "id": "HS-IL-BP",
+            "name": "Hammer Strength ISO-Lateral Bench Press",
+            "zone": "B",
+            "type": "plate_loaded",
+            "pattern": "horizontal_push",
+            "muscles": {
+                "primary": ["chest"],
+                "secondary": ["triceps", "front_delts"]
+            },
+            "settings": {
+                "seat_height": "1-7",
+                "handles": "horizontal_vertical"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "unilateral": true,
+                "no_spotter_needed": true
+            },
+            "substitutes": [
+                { "id": "NAU-CP", "match": 0.85 },
+                { "id": "EGYM-CP", "match": 0.9 },
+                { "id": "DB-BP", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "3-5 reps",
+                "hypertrophy": "6-10 reps",
+                "endurance": "12-15 reps"
+            }
+        },
+
+        {
+            "id": "HS-IL-DEC",
+            "name": "Hammer Strength ISO-Lateral Decline Press",
+            "zone": "B",
+            "type": "plate_loaded",
+            "pattern": "horizontal_push",
+            "muscles": {
+                "primary": ["lower_chest"],
+                "secondary": ["triceps", "front_delts"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "handles": "converging",
+                "angle": "decline_fixed"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "unilateral": true,
+                "shoulder_friendly": true
+            },
+            "substitutes": [
+                { "id": "HS-IL-BP", "match": 0.85 },
+                { "id": "DIP-MACH", "match": 0.7 },
+                { "id": "DECLINE-DB", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "4-6 reps",
+                "hypertrophy": "8-12 reps",
+                "endurance": "12-15 reps"
+            }
+        },
+
+        {
+            "id": "HS-IL-ROW",
+            "name": "Hammer Strength ISO-Lateral Row",
+            "zone": "B",
+            "type": "plate_loaded",
+            "pattern": "horizontal_pull",
+            "muscles": {
+                "primary": ["mid_back", "lats"],
+                "secondary": ["biceps", "rear_delts"]
+            },
+            "settings": {
+                "seat_height": "adjustable",
+                "chest_pad": "adjustable",
+                "handles": "multiple"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "unilateral": true,
+                "back_support": true
+            },
+            "substitutes": [
+                { "id": "NAU-ROW", "match": 0.85 },
+                { "id": "CABLE-ROW", "match": 0.8 },
+                { "id": "DB-ROW", "match": 0.7 }
+            ],
+            "programming": {
+                "strength": "4-6 reps",
+                "hypertrophy": "8-12 reps",
+                "endurance": "15-20 reps"
+            }
+        },
+
+        {
+            "id": "HS-IL-INC",
+            "name": "Hammer Strength ISO-Lateral Incline Press",
+            "zone": "B",
+            "type": "plate_loaded",
+            "pattern": "incline_push",
+            "muscles": {
+                "primary": ["upper_chest"],
+                "secondary": ["front_delts", "triceps"]
+            },
+            "settings": {
+                "seat_position": "adjustable",
+                "handles": "converging",
+                "angle": "incline_fixed"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "unilateral": true,
+                "shoulder_angle": "optimal"
+            },
+            "substitutes": [
+                { "id": "INCLINE-DB", "match": 0.8 },
+                { "id": "INCLINE-BB", "match": 0.75 },
+                { "id": "HS-IL-SP", "match": 0.6 }
+            ],
+            "programming": {
+                "strength": "4-6 reps",
+                "hypertrophy": "8-12 reps",
+                "endurance": "12-15 reps"
+            }
+        },
+
+        {
+            "id": "SLED",
+            "name": "Sled (Push/Pull)",
+            "zone": "F",
+            "type": "functional",
+            "pattern": "locomotion",
+            "muscles": {
+                "primary": ["quads", "glutes"],
+                "secondary": ["calves", "core", "upper_body"]
+            },
+            "settings": {
+                "weight": "add_plates",
+                "straps": "waist_or_hands",
+                "distance": "30_feet"
+            },
+            "experience": "intermediate",
+            "safety": {
+                "scalable": true,
+                "low_impact": true
+            },
+            "substitutes": [
+                { "id": "PROWLER", "match": 0.9 },
+                { "id": "FARMERS", "match": 0.5 },
+                { "id": "LUNGES", "match": 0.5 }
+            ],
+            "programming": {
+                "power": "heavy_3-5_trips",
+                "conditioning": "moderate_8-10_trips",
+                "endurance": "light_continuous"
+            }
+        }
+    ],
+
+    "quick_substitution_matrix": {
+        "chest": ["EGYM-CP", "HS-IL-BP", "NAU-CP", "HS-IL-INC", "HS-IL-DEC", "PEC-FLY"],
+        "back_vertical": ["HS-IL-FLPD", "NAU-LAT", "NAU-ASSIST"],
+        "back_horizontal": ["EGYM-ROW", "NAU-ROW", "HS-IL-ROW", "HS-IL-LOWROW", "HS-IL-HIROW"],
+        "shoulders": ["EGYM-SP", "NAU-SP", "HS-IL-SP", "DELT-RAISE", "DELT-FLY"],
+        "legs_quad": ["EGYM-LE", "NAU-LE", "HS-LE", "LEG-PRESS"],
+        "legs_ham": ["EGYM-LC", "NAU-LC", "KNEEL-LC"],
+        "legs_glute": ["NAU-GLUTE", "BOOTY-BUILD", "GLUTE-PRESS"],
+        "arms_bicep": ["EGYM-BC", "NAU-BC"],
+        "arms_tricep": ["EGYM-TRI", "TRI-EXT", "DIP-MACH"],
+        "core": ["ABCOASTER", "HOIST-ABS", "NAU-CRUNCH", "NAU-ROTARY", "ROMAN-CHAIR"],
+        "cardio": ["TREADMILL", "BIKES", "ELLIPTICAL", "ROWING", "STAIRMASTER", "JACOBS", "HELIX"]
+    },
+
+    "workout_templates": {
+        "push_day": ["EGYM-CP", "HS-IL-BP", "HS-IL-INC", "HS-IL-SP", "DELT-RAISE", "EGYM-TRI"],
+        "pull_day": ["HS-IL-FLPD", "EGYM-ROW", "HS-IL-HIROW", "PULLOVER", "EGYM-BC", "FACE-PULLS"],
+        "leg_day": ["LEG-PRESS", "EGYM-LE", "EGYM-LC", "NAU-GLUTE", "STAND-CALF", "ABDUCTOR"],
+        "upper_a": ["HS-IL-BP", "HS-IL-ROW", "HS-IL-SP", "NAU-LAT", "NAU-BC", "TRI-EXT"],
+        "upper_b": ["NAU-CP", "EGYM-ROW", "HS-IL-INC", "HS-IL-HIROW", "EGYM-BC", "EGYM-TRI"],
+        "lower_a": ["EGYM-LP", "NAU-LC", "NAU-LE", "NAU-GLUTE", "STAND-CALF"],
+        "lower_b": ["LEG-PRESS", "KNEEL-LC", "HS-LE", "BOOTY-BUILD", "HORIZ-CALF"],
+        "full_body": ["HS-IL-BP", "HS-IL-FLPD", "LEG-PRESS", "NAU-SP", "EGYM-LC", "NAU-CRUNCH"],
+        "circuit_30min": ["EGYM-CP", "EGYM-ROW", "EGYM-SP", "EGYM-BC", "EGYM-TRI", "EGYM-LE", "EGYM-LC"],
+        "hiit_cardio": ["JACOBS", "SLED", "ROWING", "WAR-ROPES", "KETTLEBELLS"],
+        "glute_focus": ["NAU-GLUTE", "BOOTY-BUILD", "ABDUCTOR", "SLED", "HELIX", "STAIRMASTER"],
+        "core_circuit": ["ABCOASTER", "NAU-ROTARY", "HOIST-ABS", "NAU-CRUNCH", "ROMAN-CHAIR"]
+    }
+}

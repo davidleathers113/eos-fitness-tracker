@@ -1,0 +1,46 @@
+{
+  "user": {
+    "name": "David",
+    "experience_level": "intermediate",
+    "goals": ["hypertrophy", "strength"],
+    "typical_duration": 60,
+    "preferred_zones": ["A", "B", "C"],
+    "gym_location": "EOS Fitness Lutz, Florida"
+  },
+  "equipment_settings": {
+    "EGYM-CP": {
+      "last_weight": 120,
+      "seat_position": "Auto-adjusted",
+      "notes": "Machine auto-adjusts to saved position",
+      "last_used": "2025-01-09"
+    },
+    "HS-IL-BP": {
+      "seat_height": 4,
+      "back_angle": "45°",
+      "grip": "horizontal",
+      "last_weight": "45 per side",
+      "notes": "Start with 2 plates per side",
+      "last_used": "2025-01-08"
+    },
+    "HS-PL-SQT": {
+      "foot_position": "shoulder-width",
+      "back_pad": "upper position",
+      "last_weight": "90 per side",
+      "notes": "Focus on depth",
+      "last_used": "2025-01-07"
+    }
+  },
+  "preferences": {
+    "avoid": [],
+    "prefer": ["EGYM machines when available", "Plate-loaded for compound movements"],
+    "warm_up_time": 10,
+    "rest_between_sets": 90,
+    "notification_reminders": true
+  },
+  "quick_substitutes": {
+    "EGYM-CP": ["HS-IL-BP", "NAUT-CP", "HS-DL-BP"],
+    "HS-PLPD": ["NAUT-LAT", "EGYM-LP"],
+    "HS-PL-SQT": ["HS-HSQT", "EGYM-LP"]
+  },
+  "last_updated": "2025-01-09T10:00:00Z"
+}

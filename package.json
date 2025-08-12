@@ -1,0 +1,25 @@
+{
+  "name": "eos-fitness-tracker",
+  "version": "2.0.0",
+  "description": "Comprehensive gym equipment tracking system for EOS Fitness Lutz",
+  "main": "src/index.html",
+  "scripts": {
+    "start": "open src/index.html",
+    "setup": "bash scripts/setup.sh",
+    "backup": "cp -r data backups/backup-$(date +%Y%m%d-%H%M%S)"
+  },
+  "keywords": [
+    "fitness",
+    "gym",
+    "equipment",
+    "tracker",
+    "eos",
+    "workout"
+  ],
+  "author": "David Leathers",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "file:///Users/davidleathers/projects/eos-fitness-tracker"
+  }
+}

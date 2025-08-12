@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EOS Fitness Tracker - Equipment Settings & Workout Manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <meta name="description" content="Track equipment settings, find substitutes, and manage workouts at EOS Fitness Lutz, Florida">
+    <meta name="theme-color" content="#FF6B35">
+</head>
+<body>
+    <!-- Main Header -->
+    <header class="main-header">
+        <div class="header-content">
+            <h1>💪 EOS Fitness Tracker</h1>
+            <div class="header-info">
+                <span class="gym-location">EOS Fitness Lutz, FL</span>
+                <span id="last-updated" class="last-updated">Loading...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="main-nav">
+        <button data-view="equipment" class="nav-btn active">
+            <span class="nav-icon">🏋️</span>
+            <span>Equipment</span>
+        </button>
+        <button data-view="workout" class="nav-btn">
+            <span class="nav-icon">📋</span>
+            <span>Workout</span>
+        </button>
+        <button data-view="substitutes" class="nav-btn">
+            <span class="nav-icon">🔄</span>
+            <span>Substitutes</span>
+        </button>
+        <button data-view="history" class="nav-btn">
+            <span class="nav-icon">📊</span>
+            <span>History</span>
+        </button>
+        <button data-view="settings" class="nav-btn">
+            <span class="nav-icon">⚙️</span>
+            <span>Settings</span>
+        </button>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="main-content">
+        
+        <!-- Equipment View -->
+        <div id="equipment-view" class="view active">
+            <!-- Search and Filters -->
+            <div class="filters-section">
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="Search equipment, muscles, or zones..." class="search-input">
+                </div>
+                
+                <div class="filter-groups">
+                    <!-- Zone Filters -->
+                    <div class="filter-group">
+                        <label class="filter-label">Zone:</label>
+                        <div class="filter-buttons">
+                            <button class="zone-filter filter-btn active" data-zone="all">All</button>
+                            <button class="zone-filter filter-btn" data-zone="A">A - EGYM</button>
+                            <button class="zone-filter filter-btn" data-zone="B">B - Hammer</button>
+                            <button class="zone-filter filter-btn" data-zone="C">C - Nautilus</button>
+                            <button class="zone-filter filter-btn" data-zone="D">D - Free</button>
+                            <button class="zone-filter filter-btn" data-zone="E">E - Cardio</button>
+                            <button class="zone-filter filter-btn" data-zone="F">F - Functional</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Muscle Group Filters -->
+                    <div class="filter-group">
+                        <label class="filter-label">Muscle:</label>
+                        <div class="filter-buttons">
+                            <button class="muscle-filter filter-btn active" data-muscle="all">All</button>
+                            <button class="muscle-filter filter-btn" data-muscle="chest">Chest</button>
+                            <button class="muscle-filter filter-btn" data-muscle="back">Back</button>
+                            <button class="muscle-filter filter-btn" data-muscle="shoulders">Shoulders</button>
+                            <button class="muscle-filter filter-btn" data-muscle="legs">Legs</button>
+                            <button class="muscle-filter filter-btn" data-muscle="arms">Arms</button>
+                            <button class="muscle-filter filter-btn" data-muscle="core">Core</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Equipment Grid -->
+            <div id="equipment-list" class="equipment-grid">
+                <!-- Equipment cards will be inserted here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Workout Builder View -->
+        <div id="workout-view" class="view" style="display: none;">
+            <div id="workout-content" class="view-content">
+                <!-- Workout builder content will be inserted here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Substitutes View -->
+        <div id="substitutes-view" class="view" style="display: none;">
+            <div id="substitutes-content" class="view-content">
+                <!-- Substitutes content will be inserted here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- History View -->
+        <div id="history-view" class="view" style="display: none;">
+            <div id="history-content" class="view-content">
+                <!-- History content will be inserted here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Settings View -->
+        <div id="settings-view" class="view" style="display: none;">
+            <div id="settings-content" class="view-content">
+                <!-- Settings content will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Status Bar -->
+    <div id="status-bar" class="status-bar">Ready</div>
+
+    <!-- Modals -->
+    <!-- Equipment Detail Modal -->
+    <div id="equipment-modal" class="modal">
+        <div class="modal-content">
+            <!-- Modal content will be inserted by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Substitutes Modal -->
+    <div id="substitutes-modal" class="modal">
+        <div class="modal-content">
+            <!-- Modal content will be inserted by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="notification-container"></div>
+
+    <!-- Hidden File Input for Import -->
+    <input type="file" id="import-file" accept=".json" style="display: none;">
+    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p>EOS Fitness Tracker v2.0 | Personal Equipment Settings Manager</p>
+            <p class="footer-links">
+                <a href="#" onclick="exportData(); return false;">Export Data</a> |
+                <a href="#" onclick="showView('settings'); return false;">Settings</a> |
+                <a href="#" onclick="alert('EOS Fitness Tracker\\nVersion 2.0\\nFor tracking equipment settings at EOS Fitness Lutz, FL'); return false;">About</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Load JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{
+    "mcpServers": {
+        "browsermcp": {
+            "command": "npx",
+            "args": [
+                "@browsermcp/mcp@latest"
+            ],
+            "env": {}
+        },
+        "Bright Data": {
+            "command": "/Users/davidleathers/.nvm/versions/node/v22.14.0/bin/node",
+            "args": [
+                "/Users/davidleathers/.nvm/versions/node/v22.14.0/bin/npx",
+                "@brightdata/mcp"
+            ],
+            "env": {
+                "API_TOKEN": "a1c52bce-9154-439a-b33a-c7dddf98bf9e",
+                "WEB_UNLOCKER_ZONE": "mcp_unlocker1",
+                "BROWSER_AUTH": "brd-customer-hl_9610ba6a-zone-scraping_browser1:q99o75w2xffs"
+            }
+        },
+        "playwright": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@executeautomation/playwright-mcp-server"
+            ],
+            "env": {}
+        },
+        "osp_marketing_tools": {
+            "command": "uvx",
+            "args": [
+                "--from",
+                "git+https://github.com/open-strategy-partners/osp_marketing_tools@main",
+                "osp_marketing_tools"
+            ],
+            "env": {}
+        }
+    }
+}

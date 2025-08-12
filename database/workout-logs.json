@@ -1,0 +1,115 @@
+{
+  "workouts": [
+    {
+      "id": "workout-2025-01-09-001",
+      "date": "2025-01-09",
+      "start_time": "14:30",
+      "end_time": "15:45",
+      "duration_minutes": 75,
+      "type": "Push Day",
+      "zones_visited": ["A", "B", "C"],
+      "exercises": [
+        {
+          "equipment_id": "HS-IL-BP",
+          "equipment_name": "Hammer Strength Incline Bench Press",
+          "sets": [
+            {"reps": 10, "weight": 135, "rest_seconds": 90, "rpe": 7},
+            {"reps": 8, "weight": 155, "rest_seconds": 120, "rpe": 8},
+            {"reps": 8, "weight": 155, "rest_seconds": 120, "rpe": 8.5},
+            {"reps": 6, "weight": 175, "rest_seconds": 150, "rpe": 9}
+          ],
+          "notes": "Good form, felt strong",
+          "duration_minutes": 12
+        },
+        {
+          "equipment_id": "EGYM-CP",
+          "equipment_name": "EGYM Chest Press",
+          "sets": [
+            {"reps": 12, "weight": 100, "rest_seconds": 60, "rpe": 7},
+            {"reps": 10, "weight": 110, "rest_seconds": 60, "rpe": 8},
+            {"reps": 10, "weight": 120, "rest_seconds": 90, "rpe": 9}
+          ],
+          "notes": "Machine auto-adjusted, smooth motion",
+          "duration_minutes": 8
+        },
+        {
+          "equipment_id": "NAUT-SP",
+          "equipment_name": "Nautilus Shoulder Press",
+          "sets": [
+            {"reps": 12, "weight": 70, "rest_seconds": 60, "rpe": 7},
+            {"reps": 10, "weight": 80, "rest_seconds": 90, "rpe": 8},
+            {"reps": 8, "weight": 90, "rest_seconds": 90, "rpe": 9}
+          ],
+          "notes": "Focused on controlled negative",
+          "duration_minutes": 9
+        }
+      ],
+      "notes": "Great push day workout, energy levels high",
+      "mood": "energetic",
+      "performance_rating": 8
+    },
+    {
+      "id": "workout-2025-01-07-001",
+      "date": "2025-01-07",
+      "start_time": "16:00",
+      "end_time": "17:15",
+      "duration_minutes": 75,
+      "type": "Pull Day",
+      "zones_visited": ["A", "B", "C"],
+      "exercises": [
+        {
+          "equipment_id": "HS-PLPD",
+          "equipment_name": "Hammer Strength Plate-Loaded Pulldown",
+          "sets": [
+            {"reps": 12, "weight": 90, "rest_seconds": 60, "rpe": 6},
+            {"reps": 10, "weight": 110, "rest_seconds": 90, "rpe": 7},
+            {"reps": 10, "weight": 110, "rest_seconds": 90, "rpe": 8},
+            {"reps": 8, "weight": 130, "rest_seconds": 120, "rpe": 9}
+          ],
+          "notes": "Wide grip, full stretch",
+          "duration_minutes": 11
+        },
+        {
+          "equipment_id": "EGYM-RW",
+          "equipment_name": "EGYM Row",
+          "sets": [
+            {"reps": 12, "weight": 80, "rest_seconds": 60, "rpe": 7},
+            {"reps": 10, "weight": 90, "rest_seconds": 60, "rpe": 8},
+            {"reps": 10, "weight": 100, "rest_seconds": 90, "rpe": 8.5}
+          ],
+          "notes": "AI adjusted resistance perfectly",
+          "duration_minutes": 8
+        }
+      ],
+      "notes": "Back felt strong, good mind-muscle connection",
+      "mood": "focused",
+      "performance_rating": 7.5
+    }
+  ],
+  "stats": {
+    "total_workouts": 2,
+    "total_time_minutes": 150,
+    "favorite_equipment": ["HS-IL-BP", "EGYM-CP", "HS-PLPD"],
+    "average_workout_duration": 75,
+    "most_used_zones": ["A", "B", "C"],
+    "weekly_frequency": 4
+  },
+  "templates": [
+    {
+      "name": "Push Day",
+      "equipment_sequence": ["HS-IL-BP", "EGYM-CP", "NAUT-SP", "NAUT-TE"],
+      "target_duration": 60
+    },
+    {
+      "name": "Pull Day",
+      "equipment_sequence": ["HS-PLPD", "EGYM-RW", "NAUT-BC", "HS-SHRUG"],
+      "target_duration": 60
+    },
+    {
+      "name": "Leg Day",
+      "equipment_sequence": ["HS-PL-SQT", "EGYM-LP", "HS-LC", "NAUT-CE"],
+      "target_duration": 75
+    }
+  ],
+  "last_updated": "2025-01-09T10:00:00Z"
+}
