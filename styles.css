@@ -1116,6 +1116,23 @@ body {
     .equipment-actions button {
         width: 100%;
     }
+    
+    /* Larger touch targets on mobile */
+    .equipment-header[role="button"] {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .keyboard-help-modal {
+        width: 95%;
+        margin: 1rem;
+    }
+    
+    .shortcuts-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
 }
 
 /* Authentication UI Styles */
