@@ -507,9 +507,9 @@ exports.handler = async (event, context) => {
         };
       }
 
-      // Get existing logs
-      let logs = await userStore.get(logsKey, { type: 'json' });
-      if (!logs) {
+      // Get existing logs with ETag for concurrency control
+      const logsResult = await userStore.getWithMetadata(logsKey, { type: 'json' });
+      if (!logsResult || !logsResult.data) {
         logger.warn('Workout logs not found for update', { userId, workoutId });
         const errorResponse = formatErrorResponse(logger, 
           new Error('Workout logs not found'), 
@@ -520,6 +520,9 @@ exports.handler = async (event, context) => {
           body: JSON.stringify(errorResponse)
         };
       }
+      
+      let logs = logsResult.data;
+      const currentETag = logsResult.etag;
 
       // Find and update workout
       const workoutIndex = logs.workouts.findIndex(w => w.id === workoutId);
@@ -538,7 +541,7 @@ exports.handler = async (event, context) => {
       logs.workouts[workoutIndex] = workout;
       logs = updateStatistics(logs);
 
-      // Save back to Blobs
+      // Save back to Blobs with ETag-based optimistic locking
       const metadata = {
         lastUpdated: new Date().toISOString(),
         version: '2.0',
@@ -546,7 +549,32 @@ exports.handler = async (event, context) => {
         correlationId: logger.correlationId
       };
 
-      const result = await userStore.setJSON(logsKey, logs, { metadata });
+      const saveOptions = { metadata };
+      if (currentETag) {
+        saveOptions.onlyIfMatch = currentETag;
+      }
+
+      const result = await userStore.setJSON(logsKey, logs, saveOptions);
+      
+      // Check if write was successful with ETag
+      if (currentETag && !result.modified) {
+        logger.warn('Workout update failed due to concurrent modification', { 
+          userId, 
+          workoutId,
+          currentETag,
+          modified: result.modified
+        });
+        
+        const conflictResponse = formatErrorResponse(logger, 
+          new Error('Concurrent modification'), 
+          'Conflict: Workout logs were modified during update. Please refresh and try again.');
+        
+        return {
+          statusCode: 409, // Conflict
+          headers,
+          body: JSON.stringify(conflictResponse)
+        };
+      }
       
       logger.info('Workout updated successfully', { 
         userId, 
@@ -601,9 +629,9 @@ exports.handler = async (event, context) => {
         };
       }
 
-      // Get existing logs
-      let logs = await userStore.get(logsKey, { type: 'json' });
-      if (!logs) {
+      // Get existing logs with ETag for concurrency control
+      const logsResult = await userStore.getWithMetadata(logsKey, { type: 'json' });
+      if (!logsResult || !logsResult.data) {
         logger.warn('Workout logs not found for deletion', { userId, workoutId });
         const errorResponse = formatErrorResponse(logger, 
           new Error('Workout logs not found'), 
@@ -614,6 +642,9 @@ exports.handler = async (event, context) => {
           body: JSON.stringify(errorResponse)
         };
       }
+      
+      let logs = logsResult.data;
+      const currentETag = logsResult.etag;
 
       // Filter out the workout to delete
       const originalLength = logs.workouts.length;
@@ -633,7 +664,7 @@ exports.handler = async (event, context) => {
 
       logs = updateStatistics(logs);
 
-      // Save back to Blobs
+      // Save back to Blobs with ETag-based optimistic locking
       const metadata = {
         lastUpdated: new Date().toISOString(),
         version: '2.0',
@@ -641,7 +672,32 @@ exports.handler = async (event, context) => {
         correlationId: logger.correlationId
       };
 
-      const result = await userStore.setJSON(logsKey, logs, { metadata });
+      const saveOptions = { metadata };
+      if (currentETag) {
+        saveOptions.onlyIfMatch = currentETag;
+      }
+
+      const result = await userStore.setJSON(logsKey, logs, saveOptions);
+      
+      // Check if write was successful with ETag
+      if (currentETag && !result.modified) {
+        logger.warn('Workout deletion failed due to concurrent modification', { 
+          userId, 
+          workoutId,
+          currentETag,
+          modified: result.modified
+        });
+        
+        const conflictResponse = formatErrorResponse(logger, 
+          new Error('Concurrent modification'), 
+          'Conflict: Workout logs were modified during deletion. Please refresh and try again.');
+        
+        return {
+          statusCode: 409, // Conflict
+          headers,
+          body: JSON.stringify(conflictResponse)
+        };
+      }
       
       logger.info('Workout deleted successfully', { 
         userId, 
