@@ -174,6 +174,133 @@ const announceToScreenReader = debounce((message) => {
     }
 }, 300);
 
+// Keyboard shortcuts manager
+const keyboardManager = {
+    // Check if we should handle keyboard shortcuts
+    canHandleShortcuts() {
+        // Don't handle shortcuts if:
+        // - Any input has focus
+        // - Any modal is open
+        // - User is typing in contenteditable
+        const activeElement = document.activeElement;
+        const isInputFocused = activeElement && (
+            activeElement.tagName === 'INPUT' || 
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.tagName === 'SELECT' ||
+            activeElement.isContentEditable
+        );
+        
+        const isModalOpen = document.querySelector('.modal:not(.hidden), .modal-overlay:not(.hidden)');
+        
+        return !isInputFocused && !isModalOpen;
+    },
+    
+    // Zone mapping for number keys
+    zoneMap: {
+        '1': 'A',
+        '2': 'B', 
+        '3': 'C',
+        '4': 'D',
+        '5': 'E',
+        '6': 'F'
+    },
+    
+    // Handle global keyboard shortcuts
+    handleShortcut(event) {
+        // Always handle Escape regardless of context
+        if (event.key === 'Escape') {
+            this.handleEscape(event);
+            return;
+        }
+        
+        // Only handle other shortcuts if context allows
+        if (!this.canHandleShortcuts()) {
+            return;
+        }
+        
+        switch (event.key) {
+            case '/':
+                event.preventDefault();
+                this.focusSearch();
+                break;
+                
+            case '?':
+                event.preventDefault();
+                this.showKeyboardHelp();
+                break;
+                
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+                event.preventDefault();
+                this.selectZone(this.zoneMap[event.key]);
+                break;
+        }
+    },
+    
+    // Handle Escape key context-aware behavior
+    handleEscape(event) {
+        const searchInput = document.getElementById('search-input');
+        const activeElement = document.activeElement;
+        
+        // If search input is focused and has content, clear it
+        if (activeElement === searchInput && searchInput.value) {
+            event.preventDefault();
+            searchInput.value = '';
+            updateFilterState({ search: '' });
+            announceToScreenReader('Search cleared');
+            return;
+        }
+        
+        // If any modal is open, close it
+        const openModal = document.querySelector('.modal:not(.hidden), .modal-overlay:not(.hidden)');
+        if (openModal) {
+            event.preventDefault();
+            closeModal();
+            return;
+        }
+        
+        // If search is focused but empty, blur it
+        if (activeElement === searchInput) {
+            event.preventDefault();
+            searchInput.blur();
+            return;
+        }
+    },
+    
+    // Focus search input
+    focusSearch() {
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.focus();
+            searchInput.select(); // Select existing text if any
+            announceToScreenReader('Search focused');
+        }
+    },
+    
+    // Select a zone filter
+    selectZone(zone) {
+        if (currentView === 'equipment') {
+            updateFilterState({ zone: zone });
+            announceToScreenReader(`Zone ${zone} selected`);
+        }
+    },
+    
+    // Show keyboard help (placeholder for now)
+    showKeyboardHelp() {
+        announceToScreenReader('Keyboard shortcuts: Slash to search, 1-6 for zones A-F, Escape to clear or close');
+        // We'll implement a proper help modal in the next task
+    }
+};
+
+// Global keyboard event handler
+function handleGlobalKeydown(event) {
+    keyboardManager.handleShortcut(event);
+}
+
 // URL State Management
 const urlStateManager = {
     // Update URL with current filter state
