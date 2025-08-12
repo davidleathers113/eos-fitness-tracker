@@ -7,7 +7,7 @@
 
 [build.environment]
   # Ensure Node.js version compatibility if needed
-  NODE_VERSION = "18.14.0"
+  NODE_VERSION = "20"
 
 [functions]
   # Directory where Functions are located
@@ -15,6 +15,10 @@
   
   # Set Node.js version for Functions
   node_bundler = "esbuild"
+  
+  # Configure Functions runtime
+  [functions.environment]
+    NODE_VERSION = "20"
 
 # Security headers for the application
 [[headers]]

@@ -1,4 +1,4 @@
-const { getStore } = require("@netlify/blobs");
+const { getStore, connectLambda } = require("@netlify/blobs");
 
 // Validation function (matches frontend validation)
 function validateWorkoutLogs(logs) {
@@ -116,6 +116,8 @@ function updateStatistics(logs) {
 }
 
 exports.handler = async (event, context) => {
+  // Initialize Netlify Blobs in Lambda compatibility (Functions API v1)
+  connectLambda(event);
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, x-user-id',

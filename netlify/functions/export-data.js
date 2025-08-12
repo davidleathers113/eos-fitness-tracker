@@ -1,4 +1,4 @@
-const { getStore } = require("@netlify/blobs");
+const { getStore, connectLambda } = require("@netlify/blobs");
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -45,6 +45,8 @@ async function loadEquipmentDatabase() {
 }
 
 exports.handler = async (event, context) => {
+  // Initialize Netlify Blobs in Lambda compatibility (Functions API v1)
+  connectLambda(event);
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, x-user-id',
