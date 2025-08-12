@@ -13,6 +13,150 @@ let filterState = {
     search: ''
 };
 
+// Update filter state and sync to URL
+function updateFilterState(newState) {
+    const changed = Object.keys(newState).some(key => filterState[key] !== newState[key]);
+    
+    if (changed) {
+        Object.assign(filterState, newState);
+        urlStateManager.updateURL();
+        updateFilterButtons();
+        updateClearAllButton();
+        updateFilterChips();
+        displayEquipment();
+    }
+}
+
+// Clear all filters and search
+function clearAllFilters() {
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    
+    updateFilterState({
+        zone: 'all',
+        muscle: 'all',
+        search: ''
+    });
+    
+    // Announce the action to screen readers
+    announceToScreenReader('All filters cleared. Showing all equipment.');
+}
+
+// Update clear all button state
+function updateClearAllButton() {
+    const clearBtn = document.getElementById('clear-all-btn');
+    if (clearBtn) {
+        const hasActiveFilters = filterState.zone !== 'all' || 
+                                filterState.muscle !== 'all' || 
+                                filterState.search !== '';
+        
+        clearBtn.disabled = !hasActiveFilters;
+        clearBtn.setAttribute('aria-label', hasActiveFilters ? 
+            'Clear all active filters and search' : 
+            'No active filters to clear');
+    }
+}
+
+// Update filter chips display
+function updateFilterChips() {
+    const container = document.getElementById('filter-chips-container');
+    const chipsDiv = document.getElementById('filter-chips');
+    
+    if (!container || !chipsDiv) return;
+    
+    // Clear existing chips
+    chipsDiv.innerHTML = '';
+    
+    const activeFilters = [];
+    
+    // Add zone chip if not 'all'
+    if (filterState.zone !== 'all') {
+        activeFilters.push({
+            type: 'zone',
+            label: `Zone: ${filterState.zone}`,
+            value: filterState.zone
+        });
+    }
+    
+    // Add muscle chip if not 'all'
+    if (filterState.muscle !== 'all') {
+        activeFilters.push({
+            type: 'muscle',
+            label: `Muscle: ${filterState.muscle.charAt(0).toUpperCase() + filterState.muscle.slice(1)}`,
+            value: filterState.muscle
+        });
+    }
+    
+    // Add search chip if has text
+    if (filterState.search) {
+        activeFilters.push({
+            type: 'search',
+            label: `Search: "${filterState.search}"`,
+            value: filterState.search
+        });
+    }
+    
+    // Show/hide container based on active filters
+    if (activeFilters.length === 0) {
+        container.classList.add('hidden');
+        return;
+    } else {
+        container.classList.remove('hidden');
+    }
+    
+    // Create chips
+    activeFilters.forEach(filter => {
+        const chip = document.createElement('span');
+        chip.className = 'filter-chip';
+        chip.setAttribute('role', 'button');
+        chip.setAttribute('tabindex', '0');
+        
+        const label = document.createElement('span');
+        label.textContent = filter.label;
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'filter-chip-remove';
+        removeBtn.textContent = '×';
+        removeBtn.setAttribute('aria-label', `Remove ${filter.label} filter`);
+        removeBtn.setAttribute('title', `Remove ${filter.label} filter`);
+        
+        // Handle chip removal
+        const removeFilter = () => {
+            const searchInput = document.getElementById('search-input');
+            
+            if (filter.type === 'zone') {
+                updateFilterState({ zone: 'all' });
+            } else if (filter.type === 'muscle') {
+                updateFilterState({ muscle: 'all' });
+            } else if (filter.type === 'search') {
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+                updateFilterState({ search: '' });
+            }
+        };
+        
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeFilter();
+        });
+        
+        // Also allow Enter/Space on the chip itself
+        chip.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                removeFilter();
+            }
+        });
+        
+        chip.appendChild(label);
+        chip.appendChild(removeBtn);
+        chipsDiv.appendChild(chip);
+    });
+}
+
 // Utility: Debounce function for search performance
 function debounce(fn, wait = 150) {
     let t; 
@@ -21,6 +165,84 @@ function debounce(fn, wait = 150) {
         t = setTimeout(() => fn(...args), wait); 
     };
 }
+
+// Utility: Throttled announcements for screen readers
+const announceToScreenReader = debounce((message) => {
+    const announcements = document.getElementById('sr-announcements');
+    if (announcements) {
+        announcements.textContent = message;
+    }
+}, 300);
+
+// URL State Management
+const urlStateManager = {
+    // Update URL with current filter state
+    updateURL: debounce(() => {
+        const params = new URLSearchParams();
+        
+        if (filterState.zone !== 'all') {
+            params.set('zone', filterState.zone);
+        }
+        if (filterState.muscle !== 'all') {
+            params.set('muscle', filterState.muscle);
+        }
+        if (filterState.search) {
+            params.set('search', filterState.search);
+        }
+        
+        const url = new URL(window.location);
+        url.search = params.toString();
+        
+        // Use pushState to update URL without page reload
+        window.history.pushState({ filterState: { ...filterState } }, '', url);
+        
+        // Also persist to localStorage
+        localStorage.setItem('eos-filter-state', JSON.stringify(filterState));
+    }, 200),
+    
+    // Read filter state from URL parameters
+    readFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        
+        return {
+            zone: params.get('zone') || 'all',
+            muscle: params.get('muscle') || 'all',
+            search: params.get('search') || ''
+        };
+    },
+    
+    // Read filter state from localStorage as fallback
+    readFromStorage() {
+        try {
+            const stored = localStorage.getItem('eos-filter-state');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                return {
+                    zone: parsed.zone || 'all',
+                    muscle: parsed.muscle || 'all',
+                    search: parsed.search || ''
+                };
+            }
+        } catch (error) {
+            console.warn('Error reading filter state from localStorage:', error);
+        }
+        return { zone: 'all', muscle: 'all', search: '' };
+    },
+    
+    // Initialize filter state from URL or localStorage
+    initializeState() {
+        const urlState = this.readFromURL();
+        const hasUrlParams = window.location.search.includes('zone') || 
+                            window.location.search.includes('muscle') || 
+                            window.location.search.includes('search');
+        
+        if (hasUrlParams) {
+            return urlState;
+        } else {
+            return this.readFromStorage();
+        }
+    }
+};
 
 // Utility: Safe muscle data extraction
 function safeMuscles(equipment) {
@@ -64,19 +286,31 @@ const ApiClient = {
         if (!this.userToken) return false;
         
         try {
-            const [payloadBase64] = this.userToken.split('.');
-            const payload = JSON.parse(atob(payloadBase64));
-            
-            // Check if token is expired (with 5 minute buffer)
-            const now = Date.now();
-            const expirationBuffer = 5 * 60 * 1000; // 5 minutes
-            
-            if (payload.exp && now > (payload.exp - expirationBuffer)) {
-                console.warn('Authentication token expired');
+            // JWT format: header.payload.signature - we need the payload (second segment)
+            const segments = this.userToken.split('.');
+            if (segments.length !== 3) {
+                console.warn('Invalid JWT format: expected 3 segments');
                 return false;
             }
             
-            // Update userId from token if different
+            // Decode the payload (second segment) using base64url decoding
+            const payloadBase64 = segments[1];
+            const payload = JSON.parse(this.base64urlDecode(payloadBase64));
+            
+            // Check if token is expired (with 5 minute buffer for clock skew)
+            const now = Date.now();
+            const expirationBuffer = 5 * 60 * 1000; // 5 minutes
+            
+            if (payload.exp) {
+                // JWT exp is in seconds, convert to milliseconds
+                const expMs = payload.exp * 1000;
+                if (now > (expMs - expirationBuffer)) {
+                    console.warn('Authentication token expired');
+                    return false;
+                }
+            }
+            
+            // Update userId from token if different (client-side hint only)
             if (payload.userId && payload.userId !== this.userId) {
                 this.userId = payload.userId;
                 localStorage.setItem('eos-user-id', this.userId);
@@ -87,6 +321,21 @@ const ApiClient = {
             console.error('Invalid token format:', error);
             return false;
         }
+    },
+
+    // Base64url decode (RFC 7515) - different from standard base64
+    base64urlDecode(str) {
+        // Add padding if needed
+        let padded = str;
+        const paddingNeeded = 4 - (str.length % 4);
+        if (paddingNeeded !== 4) {
+            padded += '='.repeat(paddingNeeded);
+        }
+        
+        // Replace base64url characters with base64 equivalents
+        const base64 = padded.replace(/-/g, '+').replace(/_/g, '/');
+        
+        return atob(base64);
     },
 
     // Store authentication data
@@ -184,8 +433,8 @@ const ApiClient = {
         }
     },
 
-    // Generic API call with secure authentication
-    async makeRequest(endpoint, options = {}) {
+    // Generic API call with secure authentication, retry logic, and timeouts
+    async makeRequest(endpoint, options = {}, retryCount = 0) {
         // Check authentication first
         if (!this.isAuthenticated && !this.initAuth()) {
             // For auth endpoint, allow unauthenticated requests
@@ -194,10 +443,15 @@ const ApiClient = {
             }
         }
         
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
         const defaultOptions = {
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            signal: controller.signal
         };
 
         // Add authentication header if we have a token
@@ -213,6 +467,7 @@ const ApiClient = {
 
         try {
             const response = await fetch(`/.netlify/functions/${endpoint}`, requestOptions);
+            clearTimeout(timeoutId);
             
             // Handle authentication errors
             if (response.status === 401) {
@@ -227,19 +482,53 @@ const ApiClient = {
                 throw new Error('Authentication required. Please log in again.');
             }
             
+            // Handle rate limiting with retry
+            if (response.status === 429) {
+                const retryAfter = response.headers.get('Retry-After');
+                const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, retryCount) * 1000;
+                
+                if (retryCount < 3) {
+                    console.warn(`Rate limited, retrying in ${waitTime}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                    return this.makeRequest(endpoint, options, retryCount + 1);
+                } else {
+                    throw new Error('Rate limit exceeded. Please try again later.');
+                }
+            }
+            
+            // Handle conflict errors (ETag mismatch)
+            if (response.status === 409) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Conflict: Data was modified by another client. Please refresh and try again.');
+            }
+            
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
             return await response.json();
         } catch (error) {
+            clearTimeout(timeoutId);
+            
+            // Handle network errors with retry for GET requests
+            if ((error.name === 'AbortError' || error.message.includes('fetch')) && 
+                retryCount < 3 && 
+                (!options.method || options.method === 'GET')) {
+                
+                const waitTime = Math.pow(2, retryCount) * 1000; // Exponential backoff
+                console.warn(`Network error, retrying in ${waitTime}ms...`, error.message);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                return this.makeRequest(endpoint, options, retryCount + 1);
+            }
+            
             console.error(`API Error (${endpoint}):`, error);
             
             // Return error object for handling by caller
             return {
                 error: true,
                 message: error.message,
-                offline: !this.isOnline
+                offline: !this.isOnline,
+                retryable: retryCount < 3 && (!options.method || options.method === 'GET')
             };
         }
     },
@@ -327,66 +616,117 @@ const ApiClient = {
 
 // Authentication UI Management
 function showAuthenticationModal() {
-    document.getElementById('auth-modal').style.display = 'flex';
-    document.getElementById('auth-register').style.display = 'block';
-    document.getElementById('auth-login').style.display = 'none';
-    document.getElementById('auth-loading').style.display = 'none';
+    const modal = document.getElementById('auth-modal');
+    modal.classList.remove('hidden');
+    document.getElementById('auth-register').classList.remove('hidden');
+    document.getElementById('auth-login').classList.add('hidden');
+    document.getElementById('auth-loading').classList.add('hidden');
+    
+    // Set up focus trap and keyboard support
+    FocusTrap.trapFocus(modal);
+    announceToScreenReader('Authentication dialog opened');
 }
 
 function hideAuthenticationModal() {
-    document.getElementById('auth-modal').style.display = 'none';
+    const modal = document.getElementById('auth-modal');
+    modal.classList.add('hidden');
+    
+    // Release focus trap
+    FocusTrap.releaseFocus();
+    announceToScreenReader('Authentication dialog closed');
 }
 
 function switchToLogin() {
-    document.getElementById('auth-register').style.display = 'none';
-    document.getElementById('auth-login').style.display = 'block';
+    document.getElementById('auth-register').classList.add('hidden');
+    document.getElementById('auth-login').classList.remove('hidden');
     document.getElementById('auth-title').textContent = 'Login to Your Account';
 }
 
 function switchToRegister() {
-    document.getElementById('auth-register').style.display = 'block';
-    document.getElementById('auth-login').style.display = 'none';
+    document.getElementById('auth-register').classList.remove('hidden');
+    document.getElementById('auth-login').classList.add('hidden');
     document.getElementById('auth-title').textContent = 'Welcome to EOS Fitness Tracker';
 }
 
 function showAuthLoading() {
-    document.getElementById('auth-register').style.display = 'none';
-    document.getElementById('auth-login').style.display = 'none';
-    document.getElementById('auth-loading').style.display = 'block';
+    document.getElementById('auth-register').classList.add('hidden');
+    document.getElementById('auth-login').classList.add('hidden');
+    document.getElementById('auth-loading').classList.remove('hidden');
 }
 
 // Migration UI Management
 function showMigrationModal() {
-    document.getElementById('migration-modal').style.display = 'flex';
-    document.getElementById('migration-intro').style.display = 'block';
-    document.getElementById('migration-progress').style.display = 'none';
-    document.getElementById('migration-complete').style.display = 'none';
+    const modal = document.getElementById('migration-modal');
+    modal.classList.remove('hidden');
+    document.getElementById('migration-intro').classList.remove('hidden');
+    document.getElementById('migration-progress').classList.add('hidden');
+    document.getElementById('migration-complete').classList.add('hidden');
+    
+    // Set up focus trap and keyboard support
+    FocusTrap.trapFocus(modal);
+    announceToScreenReader('Data migration dialog opened');
 }
 
 function hideMigrationModal() {
-    document.getElementById('migration-modal').style.display = 'none';
+    const modal = document.getElementById('migration-modal');
+    modal.classList.add('hidden');
+    
+    // Release focus trap
+    FocusTrap.releaseFocus();
+    announceToScreenReader('Data migration dialog closed');
 }
 
 function showMigrationProgress() {
-    document.getElementById('migration-intro').style.display = 'none';
-    document.getElementById('migration-progress').style.display = 'block';
+    document.getElementById('migration-intro').classList.add('hidden');
+    document.getElementById('migration-progress').classList.remove('hidden');
 }
 
 function showMigrationComplete(summary) {
-    document.getElementById('migration-progress').style.display = 'none';
-    document.getElementById('migration-complete').style.display = 'block';
+    document.getElementById('migration-progress').classList.add('hidden');
+    document.getElementById('migration-complete').classList.remove('hidden');
     
     const summaryEl = document.getElementById('migration-summary');
-    summaryEl.innerHTML = `
-        <div class="summary-item">
-            <strong>Settings:</strong> ${summary.settingsMigrated ? 'Migrated' : 'Skipped'} 
-            ${summary.equipmentCount ? `(${summary.equipmentCount} equipment settings)` : ''}
-        </div>
-        <div class="summary-item">
-            <strong>Workout Logs:</strong> ${summary.workoutLogsMigrated ? 'Migrated' : 'Skipped'}
-            ${summary.totalWorkouts ? `(${summary.totalWorkouts} workouts)` : ''}
-        </div>
-    `;
+    
+    // Clear existing content safely
+    while (summaryEl.firstChild) {
+        summaryEl.removeChild(summaryEl.firstChild);
+    }
+    
+    // Create settings summary item
+    const settingsItem = document.createElement('div');
+    settingsItem.className = 'summary-item';
+    
+    const settingsStrong = document.createElement('strong');
+    settingsStrong.textContent = 'Settings:';
+    settingsItem.appendChild(settingsStrong);
+    
+    const settingsStatus = document.createTextNode(` ${summary.settingsMigrated ? 'Migrated' : 'Skipped'}`);
+    settingsItem.appendChild(settingsStatus);
+    
+    if (summary.equipmentCount) {
+        const settingsCount = document.createTextNode(` (${summary.equipmentCount} equipment settings)`);
+        settingsItem.appendChild(settingsCount);
+    }
+    
+    // Create workout logs summary item
+    const workoutItem = document.createElement('div');
+    workoutItem.className = 'summary-item';
+    
+    const workoutStrong = document.createElement('strong');
+    workoutStrong.textContent = 'Workout Logs:';
+    workoutItem.appendChild(workoutStrong);
+    
+    const workoutStatus = document.createTextNode(` ${summary.workoutLogsMigrated ? 'Migrated' : 'Skipped'}`);
+    workoutItem.appendChild(workoutStatus);
+    
+    if (summary.totalWorkouts) {
+        const workoutCount = document.createTextNode(` (${summary.totalWorkouts} workouts)`);
+        workoutItem.appendChild(workoutCount);
+    }
+    
+    // Append both items to summary element
+    summaryEl.appendChild(settingsItem);
+    summaryEl.appendChild(workoutItem);
 }
 
 // Update user status in header
@@ -401,17 +741,12 @@ function updateUserStatus() {
         // Show user name if we have settings
         if (mySettings.user?.name) {
             userNameEl.textContent = mySettings.user.name;
-            userNameEl.style.display = 'inline';
+            userNameEl.classList.remove('hidden');
         }
         
         // Update auth button to logout
         authBtnEl.textContent = 'Logout';
-        authBtnEl.onclick = () => {
-            ApiClient.clearAuth();
-            showNotification('Logged out successfully', 'info');
-            updateUserStatus();
-            showAuthenticationModal();
-        };
+        authBtnEl.dataset.action = 'logout';
         
         // Update sync status
         if (ApiClient.isOnline) {
@@ -423,11 +758,11 @@ function updateUserStatus() {
         }
     } else {
         // Hide user name
-        userNameEl.style.display = 'none';
+        userNameEl.classList.add('hidden');
         
         // Update auth button to login
         authBtnEl.textContent = 'Login';
-        authBtnEl.onclick = showAuthenticationModal;
+        authBtnEl.dataset.action = 'show-auth-modal';
         
         // Update sync status to offline
         syncIndicator.className = 'sync-indicator offline';
@@ -550,6 +885,205 @@ function continueToApp() {
     loadAllData(); // Reload with fresh cloud data
 }
 
+// Focus trap management for modals
+const FocusTrap = {
+    activeModal: null,
+    previousFocus: null,
+    
+    // Get all focusable elements within a container
+    getFocusableElements(container) {
+        const focusableSelectors = [
+            'button:not([disabled])',
+            'input:not([disabled])',
+            'textarea:not([disabled])',
+            'select:not([disabled])',
+            'a[href]',
+            '[tabindex]:not([tabindex="-1"])'
+        ];
+        
+        return container.querySelectorAll(focusableSelectors.join(', '));
+    },
+    
+    // Set up focus trap for a modal
+    trapFocus(modal) {
+        this.activeModal = modal;
+        this.previousFocus = document.activeElement;
+        
+        const focusableElements = this.getFocusableElements(modal);
+        if (focusableElements.length > 0) {
+            focusableElements[0].focus();
+        }
+        
+        // Add event listener for tab trapping
+        modal.addEventListener('keydown', this.handleTabTrap.bind(this));
+    },
+    
+    // Handle tab key to trap focus within modal
+    handleTabTrap(event) {
+        if (event.key !== 'Tab') return;
+        
+        const focusableElements = this.getFocusableElements(this.activeModal);
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+        
+        if (event.shiftKey) {
+            // Shift + Tab
+            if (document.activeElement === firstElement) {
+                event.preventDefault();
+                lastElement.focus();
+            }
+        } else {
+            // Tab
+            if (document.activeElement === lastElement) {
+                event.preventDefault();
+                firstElement.focus();
+            }
+        }
+    },
+    
+    // Release focus trap and restore previous focus
+    releaseFocus() {
+        if (this.activeModal) {
+            this.activeModal.removeEventListener('keydown', this.handleTabTrap.bind(this));
+            this.activeModal = null;
+        }
+        
+        if (this.previousFocus && typeof this.previousFocus.focus === 'function') {
+            this.previousFocus.focus();
+        }
+        this.previousFocus = null;
+    }
+};
+
+// Global click handler for data-action buttons (replaces inline onclick handlers)
+function handleGlobalClick(event) {
+    const action = event.target.dataset.action;
+    if (!action) return;
+    
+    event.preventDefault();
+    
+    switch (action) {
+        case 'close-auth-modal':
+            hideAuthenticationModal();
+            break;
+        case 'close-migration-modal':
+            hideMigrationModal();
+            break;
+        case 'switch-to-login':
+            switchToLogin();
+            break;
+        case 'switch-to-register':
+            switchToRegister();
+            break;
+        case 'export-data':
+            exportData();
+            break;
+        case 'show-settings':
+            showView('settings');
+            break;
+        case 'show-about':
+            showAboutDialog();
+            break;
+        case 'show-auth-modal':
+            showAuthenticationModal();
+            break;
+        case 'logout':
+            ApiClient.clearAuth();
+            showNotification('Logged out successfully', 'info');
+            updateUserStatus();
+            showAuthenticationModal();
+            break;
+        default:
+            console.warn('Unknown action:', action);
+    }
+}
+
+// Global keyboard event handler
+function handleGlobalKeydown(event) {
+    // Handle Esc key to close modals
+    if (event.key === 'Escape') {
+        // Check which modal is open and close it
+        const authModal = document.getElementById('auth-modal');
+        const migrationModal = document.getElementById('migration-modal');
+        
+        if (authModal && !authModal.classList.contains('hidden')) {
+            event.preventDefault();
+            hideAuthenticationModal();
+        } else if (migrationModal && !migrationModal.classList.contains('hidden')) {
+            event.preventDefault();
+            hideMigrationModal();
+        }
+        
+        // Close any custom modals (like about dialog)
+        const customModals = document.querySelectorAll('.modal[style*="block"]');
+        customModals.forEach(modal => {
+            modal.remove();
+        });
+    }
+}
+
+// Screen reader announcements
+function announceToScreenReader(message) {
+    const announcer = document.getElementById('sr-announcements');
+    if (announcer) {
+        announcer.textContent = message;
+        // Clear after announcement to avoid repetition
+        setTimeout(() => {
+            announcer.textContent = '';
+        }, 1000);
+    }
+}
+
+// Show About dialog (replaces alert)
+function showAboutDialog() {
+    const aboutText = 'EOS Fitness Tracker\nVersion 2.0\nFor tracking equipment settings at EOS Fitness Lutz, FL';
+    
+    // Create a proper modal instead of using alert()
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    
+    const content = document.createElement('div');
+    content.className = 'modal-content';
+    
+    const header = document.createElement('div');
+    header.className = 'modal-header';
+    
+    const title = document.createElement('h2');
+    title.textContent = 'About EOS Fitness Tracker';
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'modal-close';
+    closeBtn.textContent = '×';
+    closeBtn.addEventListener('click', () => {
+        modal.remove();
+    });
+    
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    
+    const body = document.createElement('div');
+    body.className = 'modal-body';
+    
+    aboutText.split('\n').forEach(line => {
+        const p = document.createElement('p');
+        p.textContent = line;
+        body.appendChild(p);
+    });
+    
+    content.appendChild(header);
+    content.appendChild(body);
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    
+    // Close on outside click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
 // Listen for online/offline events
 window.addEventListener('online', () => {
     ApiClient.updateNetworkStatus();
@@ -595,6 +1129,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('start-migration').addEventListener('click', startMigration);
     document.getElementById('skip-migration').addEventListener('click', skipMigration);
     document.getElementById('continue-to-app').addEventListener('click', continueToApp);
+    
+    // Set up modal and navigation event listeners using event delegation
+    document.addEventListener('click', handleGlobalClick);
+    
+    // Add global keyboard event handling
+    document.addEventListener('keydown', handleGlobalKeydown);
     
     // Load equipment database first (doesn't require auth)
     await loadEquipmentDatabase();
@@ -880,45 +1420,118 @@ async function performDataMigration() {
     }
 }
 
-// Validation Functions
+// Enhanced Validation Functions with Security Focus
 function validateEquipmentDatabase(data) {
     if (!data || typeof data !== 'object') return false;
     if (!data.metadata || !Array.isArray(data.equipment)) return false;
     
-    // Validate each equipment item
+    // Size limit check - max 100 equipment items
+    if (data.equipment.length > 100) {
+        console.warn('Equipment database too large:', data.equipment.length);
+        return false;
+    }
+    
+    // Validate each equipment item with strict schema
     return data.equipment.every(item => {
+        if (!item || typeof item !== 'object') return false;
+        
+        // Remove dangerous properties
+        delete item.__proto__;
+        delete item.constructor;
+        delete item.prototype;
+        
         return item.id && 
                typeof item.id === 'string' &&
+               item.id.length <= 50 && // Max length
                item.name && 
                typeof item.name === 'string' &&
+               item.name.length <= 100 &&
                item.zone && 
                typeof item.zone === 'string' &&
+               item.zone.length === 1 && // Single character zone
                item.muscles && 
-               Array.isArray(item.muscles.primary);
+               Array.isArray(item.muscles.primary) &&
+               item.muscles.primary.length <= 10; // Max muscle groups
     });
 }
 
 function validateSettings(data) {
     if (!data || typeof data !== 'object') return false;
     
-    // Remove dangerous keys
-    for (const key of ['__proto__', 'constructor', 'prototype']) {
-        delete data[key];
+    // Size limit check - max 10MB JSON string
+    const jsonString = JSON.stringify(data);
+    if (jsonString.length > 10 * 1024 * 1024) {
+        console.warn('Settings data too large:', jsonString.length);
+        return false;
     }
     
-    return true; // Basic validation - extend as needed
+    // Remove dangerous keys recursively
+    const cleanData = structuredClone ? structuredClone(data) : JSON.parse(JSON.stringify(data));
+    removeDangerousKeys(cleanData);
+    
+    // Validate structure
+    if (cleanData.user && typeof cleanData.user !== 'object') return false;
+    if (cleanData.equipment_settings && typeof cleanData.equipment_settings !== 'object') return false;
+    if (cleanData.preferences && typeof cleanData.preferences !== 'object') return false;
+    
+    // Validate user data if present
+    if (cleanData.user) {
+        if (cleanData.user.name && (typeof cleanData.user.name !== 'string' || cleanData.user.name.length > 100)) {
+            return false;
+        }
+        if (cleanData.user.experience_level && !['beginner', 'intermediate', 'advanced'].includes(cleanData.user.experience_level)) {
+            return false;
+        }
+    }
+    
+    // Update original data with cleaned version
+    Object.assign(data, cleanData);
+    return true;
 }
 
 function validateWorkoutLogs(data) {
     if (!data || typeof data !== 'object') return false;
     if (!Array.isArray(data.workouts)) return false;
     
-    // Remove dangerous keys
-    for (const key of ['__proto__', 'constructor', 'prototype']) {
-        delete data[key];
+    // Size limit check - max 1000 workouts
+    if (data.workouts.length > 1000) {
+        console.warn('Too many workouts:', data.workouts.length);
+        return false;
     }
     
+    // Clean data with structured clone if available
+    const cleanData = structuredClone ? structuredClone(data) : JSON.parse(JSON.stringify(data));
+    removeDangerousKeys(cleanData);
+    
+    // Validate each workout
+    if (!cleanData.workouts.every(workout => {
+        if (!workout || typeof workout !== 'object') return false;
+        if (workout.id && (typeof workout.id !== 'string' || workout.id.length > 50)) return false;
+        if (workout.exercises && !Array.isArray(workout.exercises)) return false;
+        if (workout.exercises && workout.exercises.length > 50) return false; // Max exercises per workout
+        return true;
+    })) {
+        return false;
+    }
+    
+    // Update original data with cleaned version
+    Object.assign(data, cleanData);
     return true;
+}
+
+// Helper function to recursively remove dangerous keys
+function removeDangerousKeys(obj) {
+    if (!obj || typeof obj !== 'object') return;
+    
+    for (const key of ['__proto__', 'constructor', 'prototype']) {
+        delete obj[key];
+    }
+    
+    for (const value of Object.values(obj)) {
+        if (typeof value === 'object' && value !== null) {
+            removeDangerousKeys(value);
+        }
+    }
 }
 
 // Default Data Structures
@@ -985,12 +1598,20 @@ function setupEventListeners() {
         });
     });
     
-    // Search with debouncing
+    // Initialize filter state from URL or localStorage
+    const initialState = urlStateManager.initializeState();
+    updateFilterState(initialState);
+    
+    // Apply initial state to search input
     const searchInput = document.getElementById('search-input');
+    if (searchInput && initialState.search) {
+        searchInput.value = initialState.search;
+    }
+    
+    // Search with debouncing
     if (searchInput) {
         const debouncedSearch = debounce(() => {
-            filterState.search = searchInput.value.toLowerCase();
-            displayEquipment();
+            updateFilterState({ search: searchInput.value.toLowerCase() });
         }, 150);
         searchInput.addEventListener('input', debouncedSearch);
     }
@@ -998,20 +1619,52 @@ function setupEventListeners() {
     // Zone filters
     document.querySelectorAll('.zone-filter').forEach(button => {
         button.addEventListener('click', (e) => {
-            filterState.zone = e.target.dataset.zone;
-            updateFilterButtons();
-            displayEquipment();
+            updateFilterState({ zone: e.target.dataset.zone });
         });
     });
     
     // Muscle filters
     document.querySelectorAll('.muscle-filter').forEach(button => {
         button.addEventListener('click', (e) => {
-            filterState.muscle = e.target.dataset.muscle;
-            updateFilterButtons();
-            displayEquipment();
+            updateFilterState({ muscle: e.target.dataset.muscle });
         });
     });
+    
+    // Handle browser back/forward navigation
+    window.addEventListener('popstate', (event) => {
+        if (event.state && event.state.filterState) {
+            // Restore state from history
+            const restoredState = event.state.filterState;
+            Object.assign(filterState, restoredState);
+            
+            // Update search input
+            if (searchInput) {
+                searchInput.value = restoredState.search || '';
+            }
+            
+            updateFilterButtons();
+            displayEquipment();
+        } else {
+            // No state in history, read from URL
+            const urlState = urlStateManager.readFromURL();
+            updateFilterState(urlState);
+            
+            if (searchInput) {
+                searchInput.value = urlState.search || '';
+            }
+        }
+    });
+    
+    // Clear all button
+    const clearAllBtn = document.getElementById('clear-all-btn');
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', clearAllFilters);
+        // Initialize button state
+        updateClearAllButton();
+    }
+    
+    // Initialize filter chips display
+    updateFilterChips();
     
     // Modal close
     document.querySelectorAll('.modal-close').forEach(button => {
@@ -1041,20 +1694,28 @@ function setupEventListeners() {
 function showView(viewName) {
     currentView = viewName;
     
-    // Hide all views
+    // Hide all views using CSS classes
     document.querySelectorAll('.view').forEach(v => {
-        v.style.display = 'none';
+        v.classList.add('hidden');
     });
     
     // Show selected view
     const targetView = document.getElementById(`${viewName}-view`);
     if (targetView) {
-        targetView.style.display = 'block';
+        targetView.classList.remove('hidden');
     }
     
-    // Update navigation
+    // Update navigation with proper ARIA attributes
     document.querySelectorAll('[data-view]').forEach(button => {
-        button.classList.toggle('active', button.dataset.view === viewName);
+        const isActive = button.dataset.view === viewName;
+        button.classList.toggle('active', isActive);
+        
+        // Update aria-current for accessibility
+        if (isActive) {
+            button.setAttribute('aria-current', 'page');
+        } else {
+            button.removeAttribute('aria-current');
+        }
     });
     
     // Load view-specific content
@@ -1126,7 +1787,9 @@ function displayEquipment() {
         container.appendChild(card);
     });
     
-    updateStatusBar(`Showing ${filtered.length} of ${equipmentData.equipment.length} machines`);
+    const statusMessage = `Showing ${filtered.length} of ${equipmentData.equipment.length} machines`;
+    updateStatusBar(statusMessage);
+    announceToScreenReader(statusMessage);
 }
 
 // Safe DOM-based equipment card creation
@@ -1138,6 +1801,10 @@ function createEquipmentCardSafe(equipment) {
     // Header section
     const header = document.createElement('div');
     header.className = 'equipment-header';
+    header.style.cursor = 'pointer';
+    header.setAttribute('tabindex', '0');
+    header.setAttribute('role', 'button');
+    header.setAttribute('aria-label', `View details for ${equipment.name ?? 'Unknown Equipment'}`);
 
     const h3 = document.createElement('h3');
     h3.textContent = equipment.name ?? 'Unknown Equipment';
@@ -1148,6 +1815,15 @@ function createEquipmentCardSafe(equipment) {
 
     header.appendChild(h3);
     header.appendChild(badge);
+    
+    // Make header clickable for details
+    header.addEventListener('click', () => showEquipmentDetail(equipment.id));
+    header.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            showEquipmentDetail(equipment.id);
+        }
+    });
 
     // Body section
     const body = document.createElement('div');
@@ -1206,17 +1882,26 @@ function createEquipmentCardSafe(equipment) {
     const btnDetail = document.createElement('button');
     btnDetail.className = 'btn-detail';
     btnDetail.textContent = 'Details';
-    btnDetail.addEventListener('click', () => showEquipmentDetail(equipment.id));
+    btnDetail.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showEquipmentDetail(equipment.id);
+    });
 
     const btnAdd = document.createElement('button');
     btnAdd.className = 'btn-add';
-    btnAdd.textContent = '+ Workout';
-    btnAdd.addEventListener('click', () => addToWorkout(equipment.id));
+    btnAdd.textContent = 'Add to workout';
+    btnAdd.addEventListener('click', (e) => {
+        e.stopPropagation();
+        addToWorkout(equipment.id);
+    });
 
     const btnSub = document.createElement('button');
     btnSub.className = 'btn-substitute';
     btnSub.textContent = 'Substitutes';
-    btnSub.addEventListener('click', () => findSubstitutes(equipment.id));
+    btnSub.addEventListener('click', (e) => {
+        e.stopPropagation();
+        findSubstitutes(equipment.id);
+    });
 
     actions.appendChild(btnDetail);
     actions.appendChild(btnAdd);
@@ -2359,11 +3044,15 @@ function formatDate(dateString) {
 
 function updateFilterButtons() {
     document.querySelectorAll('.zone-filter').forEach(button => {
-        button.classList.toggle('active', button.dataset.zone === filterState.zone);
+        const isActive = button.dataset.zone === filterState.zone;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-pressed', isActive.toString());
     });
     
     document.querySelectorAll('.muscle-filter').forEach(button => {
-        button.classList.toggle('active', button.dataset.muscle === filterState.muscle);
+        const isActive = button.dataset.muscle === filterState.muscle;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-pressed', isActive.toString());
     });
 }
 
@@ -2387,20 +3076,43 @@ function updateStatusBar(message) {
 }
 
 function showNotification(message, type = 'info') {
+    // Get the notification container or fall back to body
+    const container = document.getElementById('notification-container') || document.body;
+    
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
+    notification.setAttribute('role', 'alert');
+    notification.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
     notification.textContent = message;
     
-    document.body.appendChild(notification);
+    // Add to container
+    container.appendChild(notification);
     
+    // Announce to screen readers
+    announceToScreenReader(`${type}: ${message}`);
+    
+    // Show notification with animation
     setTimeout(() => {
         notification.classList.add('show');
     }, 10);
     
+    // Auto-hide after 5 seconds (longer for accessibility)
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    }, 5000);
+    
+    // Add close button for manual dismissal
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '×';
+    closeBtn.className = 'notification-close';
+    closeBtn.setAttribute('aria-label', 'Close notification');
+    closeBtn.addEventListener('click', () => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    });
+    
+    notification.appendChild(closeBtn);
 }
 
 function closeModal() {

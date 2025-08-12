@@ -16,7 +16,7 @@
             <div class="header-info">
                 <span class="gym-location">EOS Fitness Lutz, FL</span>
                 <div class="user-status">
-                    <span id="user-name" class="user-name" style="display: none;"></span>
+                    <span id="user-name" class="user-name hidden"></span>
                     <button id="auth-btn" class="auth-btn">Login</button>
                     <span id="sync-status" class="sync-status">
                         <span class="sync-indicator offline">●</span>
@@ -29,8 +29,8 @@
     </header>
 
     <!-- Navigation -->
-    <nav class="main-nav">
-        <button data-view="equipment" class="nav-btn active">
+    <nav class="main-nav" aria-label="Main navigation">
+        <button data-view="equipment" class="nav-btn active" aria-current="page">
             <span class="nav-icon">🏋️</span>
             <span>Equipment</span>
         </button>
@@ -60,37 +60,50 @@
             <!-- Search and Filters -->
             <div class="filters-section">
                 <div class="search-bar">
-                    <input type="text" id="search-input" placeholder="Search equipment, muscles, or zones..." class="search-input">
+                    <label for="search-input" class="sr-only">Search equipment</label>
+                    <div class="search-input-container">
+                        <input type="text" id="search-input" placeholder="Search equipment, muscles, or zones..." class="search-input" aria-describedby="search-hint">
+                        <button id="clear-all-btn" class="clear-all-btn" title="Clear all filters and search">Clear all</button>
+                    </div>
+                    <div id="search-hint" class="sr-only">Search by equipment name, muscle groups, or zone letters A-F</div>
+                </div>
+                
+                <!-- Active Filter Chips -->
+                <div id="filter-chips-container" class="filter-chips-container hidden">
+                    <span class="chips-label">Active filters:</span>
+                    <div id="filter-chips" class="filter-chips"></div>
                 </div>
                 
                 <div class="filter-groups">
                     <!-- Zone Filters -->
-                    <div class="filter-group">
+                    <fieldset class="filter-group">
+                        <legend class="sr-only">Filter by gym zone</legend>
                         <label class="filter-label">Zone:</label>
                         <div class="filter-buttons">
-                            <button class="zone-filter filter-btn active" data-zone="all">All</button>
-                            <button class="zone-filter filter-btn" data-zone="A">A - EGYM</button>
-                            <button class="zone-filter filter-btn" data-zone="B">B - Hammer</button>
-                            <button class="zone-filter filter-btn" data-zone="C">C - Nautilus</button>
-                            <button class="zone-filter filter-btn" data-zone="D">D - Free</button>
-                            <button class="zone-filter filter-btn" data-zone="E">E - Cardio</button>
-                            <button class="zone-filter filter-btn" data-zone="F">F - Functional</button>
+                            <button class="zone-filter filter-btn active" data-zone="all" aria-pressed="true">All</button>
+                            <button class="zone-filter filter-btn" data-zone="A" aria-pressed="false">A - EGYM</button>
+                            <button class="zone-filter filter-btn" data-zone="B" aria-pressed="false">B - Hammer</button>
+                            <button class="zone-filter filter-btn" data-zone="C" aria-pressed="false">C - Nautilus</button>
+                            <button class="zone-filter filter-btn" data-zone="D" aria-pressed="false">D - Free</button>
+                            <button class="zone-filter filter-btn" data-zone="E" aria-pressed="false">E - Cardio</button>
+                            <button class="zone-filter filter-btn" data-zone="F" aria-pressed="false">F - Functional</button>
                         </div>
-                    </div>
+                    </fieldset>
                     
                     <!-- Muscle Group Filters -->
-                    <div class="filter-group">
+                    <fieldset class="filter-group">
+                        <legend class="sr-only">Filter by target muscle group</legend>
                         <label class="filter-label">Muscle:</label>
                         <div class="filter-buttons">
-                            <button class="muscle-filter filter-btn active" data-muscle="all">All</button>
-                            <button class="muscle-filter filter-btn" data-muscle="chest">Chest</button>
-                            <button class="muscle-filter filter-btn" data-muscle="back">Back</button>
-                            <button class="muscle-filter filter-btn" data-muscle="shoulders">Shoulders</button>
-                            <button class="muscle-filter filter-btn" data-muscle="legs">Legs</button>
-                            <button class="muscle-filter filter-btn" data-muscle="arms">Arms</button>
-                            <button class="muscle-filter filter-btn" data-muscle="core">Core</button>
+                            <button class="muscle-filter filter-btn active" data-muscle="all" aria-pressed="true">All</button>
+                            <button class="muscle-filter filter-btn" data-muscle="chest" aria-pressed="false">Chest</button>
+                            <button class="muscle-filter filter-btn" data-muscle="back" aria-pressed="false">Back</button>
+                            <button class="muscle-filter filter-btn" data-muscle="shoulders" aria-pressed="false">Shoulders</button>
+                            <button class="muscle-filter filter-btn" data-muscle="legs" aria-pressed="false">Legs</button>
+                            <button class="muscle-filter filter-btn" data-muscle="arms" aria-pressed="false">Arms</button>
+                            <button class="muscle-filter filter-btn" data-muscle="core" aria-pressed="false">Core</button>
                         </div>
-                    </div>
+                    </fieldset>
                 </div>
             </div>
 
@@ -101,28 +114,28 @@
         </div>
 
         <!-- Workout Builder View -->
-        <div id="workout-view" class="view" style="display: none;">
+        <div id="workout-view" class="view hidden">
             <div id="workout-content" class="view-content">
                 <!-- Workout builder content will be inserted here by JavaScript -->
             </div>
         </div>
 
         <!-- Substitutes View -->
-        <div id="substitutes-view" class="view" style="display: none;">
+        <div id="substitutes-view" class="view hidden">
             <div id="substitutes-content" class="view-content">
                 <!-- Substitutes content will be inserted here by JavaScript -->
             </div>
         </div>
 
         <!-- History View -->
-        <div id="history-view" class="view" style="display: none;">
+        <div id="history-view" class="view hidden">
             <div id="history-content" class="view-content">
                 <!-- History content will be inserted here by JavaScript -->
             </div>
         </div>
 
         <!-- Settings View -->
-        <div id="settings-view" class="view" style="display: none;">
+        <div id="settings-view" class="view hidden">
             <div id="settings-content" class="view-content">
                 <!-- Settings content will be inserted here by JavaScript -->
             </div>
@@ -148,11 +161,11 @@
     </div>
 
     <!-- Authentication Modal -->
-    <div id="auth-modal" class="modal-overlay" style="display: none;">
+    <div id="auth-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="auth-title">
         <div class="modal-content auth-modal">
             <div class="modal-header">
                 <h2 id="auth-title">Welcome to EOS Fitness Tracker</h2>
-                <button class="modal-close" onclick="hideAuthenticationModal()">&times;</button>
+                <button class="modal-close" data-action="close-auth-modal" aria-label="Close authentication dialog">&times;</button>
             </div>
             <div class="modal-body">
                 <div id="auth-register" class="auth-form">
@@ -166,11 +179,11 @@
                         <button type="submit" class="btn-primary">Create Account</button>
                     </form>
                     <p class="auth-switch">
-                        Already have an account? <a href="#" onclick="switchToLogin()">Login instead</a>
+                        Already have an account? <button type="button" class="link-button" data-action="switch-to-login">Login instead</button>
                     </p>
                 </div>
                 
-                <div id="auth-login" class="auth-form" style="display: none;">
+                <div id="auth-login" class="auth-form hidden">
                     <h3>Login to Your Account</h3>
                     <p>Enter your User ID to access your workout data.</p>
                     <form id="login-form">
@@ -182,11 +195,11 @@
                         <button type="submit" class="btn-primary">Login</button>
                     </form>
                     <p class="auth-switch">
-                        Don't have an account? <a href="#" onclick="switchToRegister()">Create one</a>
+                        Don't have an account? <button type="button" class="link-button" data-action="switch-to-register">Create one</button>
                     </p>
                 </div>
                 
-                <div id="auth-loading" class="auth-loading" style="display: none;">
+                <div id="auth-loading" class="auth-loading hidden">
                     <div class="loading-spinner"></div>
                     <p>Setting up your account...</p>
                 </div>
@@ -195,10 +208,11 @@
     </div>
 
     <!-- Migration Modal -->
-    <div id="migration-modal" class="modal-overlay" style="display: none;">
+    <div id="migration-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="migration-title">
         <div class="modal-content migration-modal">
             <div class="modal-header">
-                <h2>Upgrade to Cloud Storage</h2>
+                <h2 id="migration-title">Upgrade to Cloud Storage</h2>
+                <button class="modal-close" data-action="close-migration-modal" aria-label="Close migration dialog">&times;</button>
             </div>
             <div class="modal-body">
                 <div id="migration-intro" class="migration-step">
@@ -222,7 +236,7 @@
                     <button id="skip-migration" class="btn-secondary">Continue Without Migration</button>
                 </div>
                 
-                <div id="migration-progress" class="migration-step" style="display: none;">
+                <div id="migration-progress" class="migration-step hidden">
                     <h3>Migrating Your Data...</h3>
                     <div class="progress-bar">
                         <div id="migration-progress-fill" class="progress-fill"></div>
@@ -230,7 +244,7 @@
                     <p id="migration-status">Preparing migration...</p>
                 </div>
                 
-                <div id="migration-complete" class="migration-step" style="display: none;">
+                <div id="migration-complete" class="migration-step hidden">
                     <h3>✅ Migration Complete!</h3>
                     <p>Your workout data has been successfully moved to secure cloud storage.</p>
                     <div id="migration-summary" class="migration-summary"></div>
@@ -241,20 +255,22 @@
     </div>
 
     <!-- Notification Container -->
-    <div id="notification-container" class="notification-container"></div>
+    <div id="notification-container" class="notification-container" aria-live="polite" aria-atomic="false"></div>
+    
+    <!-- Screen Reader Announcements -->
+    <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
     <!-- Hidden File Input for Import -->
-    <input type="file" id="import-file" accept=".json" style="display: none;">
-    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+    <input type="file" id="import-file-input" accept=".json" class="hidden">
 
     <!-- Footer -->
     <footer class="main-footer">
         <div class="footer-content">
             <p>EOS Fitness Tracker v2.0 | Personal Equipment Settings Manager</p>
             <p class="footer-links">
-                <a href="#" onclick="exportData(); return false;">Export Data</a> |
-                <a href="#" onclick="showView('settings'); return false;">Settings</a> |
-                <a href="#" onclick="alert('EOS Fitness Tracker\\nVersion 2.0\\nFor tracking equipment settings at EOS Fitness Lutz, FL'); return false;">About</a>
+                <button type="button" class="link-button" data-action="export-data">Export Data</button> |
+                <button type="button" class="link-button" data-action="show-settings">Settings</button> |
+                <button type="button" class="link-button" data-action="show-about">About</button>
             </p>
         </div>
     </footer>
