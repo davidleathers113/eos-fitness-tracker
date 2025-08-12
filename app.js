@@ -285,14 +285,47 @@ const keyboardManager = {
     selectZone(zone) {
         if (currentView === 'equipment') {
             updateFilterState({ zone: zone });
+            
+            // Also focus the corresponding zone button for visual feedback
+            const zoneButton = document.querySelector(`[data-zone="${zone}"]`);
+            if (zoneButton) {
+                zoneButton.focus();
+            }
+            
             announceToScreenReader(`Zone ${zone} selected`);
         }
     },
     
-    // Show keyboard help (placeholder for now)
+    // Show keyboard help modal
     showKeyboardHelp() {
-        announceToScreenReader('Keyboard shortcuts: Slash to search, 1-6 for zones A-F, Escape to clear or close');
-        // We'll implement a proper help modal in the next task
+        const modal = document.getElementById('keyboard-help-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            
+            // Focus the close button for accessibility
+            const closeBtn = modal.querySelector('.modal-close');
+            if (closeBtn) {
+                closeBtn.focus();
+            }
+            
+            // Set up focus trap and keyboard support
+            FocusTrap.trapFocus(modal);
+            announceToScreenReader('Keyboard shortcuts dialog opened');
+        }
+    }
+};
+
+// Close keyboard help modal
+function closeKeyboardHelp() {
+    const modal = document.getElementById('keyboard-help-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+        
+        // Release focus trap
+        FocusTrap.releaseFocus();
+        announceToScreenReader('Keyboard shortcuts dialog closed');
     }
 };
 
@@ -1033,8 +1066,9 @@ const FocusTrap = {
     
     // Set up focus trap for a modal
     trapFocus(modal) {
-        this.activeModal = modal;
+        // Store the currently focused element
         this.previousFocus = document.activeElement;
+        this.activeModal = modal;
         
         const focusableElements = this.getFocusableElements(modal);
         if (focusableElements.length > 0) {
@@ -1792,6 +1826,20 @@ function setupEventListeners() {
     
     // Initialize filter chips display
     updateFilterChips();
+    
+    // Keyboard help modal close button
+    const keyboardHelpCloseBtn = document.querySelector('[data-action="close-keyboard-help"]');
+    if (keyboardHelpCloseBtn) {
+        keyboardHelpCloseBtn.addEventListener('click', closeKeyboardHelp);
+    }
+    
+    // Keyboard help footer link
+    const keyboardHelpLink = document.querySelector('[data-action="show-keyboard-help"]');
+    if (keyboardHelpLink) {
+        keyboardHelpLink.addEventListener('click', () => {
+            keyboardManager.showKeyboardHelp();
+        });
+    }
     
     // Modal close
     document.querySelectorAll('.modal-close').forEach(button => {
