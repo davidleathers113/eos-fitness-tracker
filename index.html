@@ -7,6 +7,34 @@
     <link rel="stylesheet" href="styles.css">
     <meta name="description" content="Track equipment settings, find substitutes, and manage workouts at EOS Fitness Lutz, Florida">
     <meta name="theme-color" content="#FF6B35">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="EOS Fitness">
+    <meta name="application-name" content="EOS Fitness Tracker">
+    <meta name="msapplication-TileColor" content="#FF6B35">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+    
+    <!-- iOS Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/icons/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/icons/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/icons/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/icons/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/icons/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/icons/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180x180.png">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+    <link rel="shortcut icon" href="/favicon.ico">
 </head>
 <body>
     <!-- Skip to main content link for keyboard users -->
@@ -18,13 +46,23 @@
             <h1>💪 EOS Fitness Tracker</h1>
             <div class="header-info">
                 <span class="gym-location">EOS Fitness Lutz, FL</span>
-                <div class="user-status">
-                    <span id="user-name" class="user-name hidden"></span>
-                    <button id="auth-btn" class="auth-btn">Login</button>
-                    <span id="sync-status" class="sync-status">
-                        <span class="sync-indicator offline">●</span>
-                        <span class="sync-text">Offline</span>
-                    </span>
+                <div class="header-controls">
+                    <div class="theme-controls">
+                        <button id="theme-toggle" class="control-btn" aria-label="Toggle dark/light theme" title="Toggle theme">
+                            <span class="theme-icon">🌙</span>
+                        </button>
+                        <button id="density-toggle" class="control-btn" aria-label="Toggle comfortable/compact view" title="Toggle density">
+                            <span class="density-icon">⚏</span>
+                        </button>
+                    </div>
+                    <div class="user-status">
+                        <span id="user-name" class="user-name hidden"></span>
+                        <button id="auth-btn" class="auth-btn">Login</button>
+                        <span id="sync-status" class="sync-status">
+                            <span class="sync-indicator offline">●</span>
+                            <span class="sync-text">Offline</span>
+                        </span>
+                    </div>
                 </div>
                 <span id="last-updated" class="last-updated">Loading...</span>
             </div>
@@ -358,5 +396,61 @@
 
     <!-- Load JavaScript -->
     <script src="app.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        // Register Service Worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('/sw.js');
+                    console.log('ServiceWorker registered successfully:', registration.scope);
+                    
+                    // Handle updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        if (newWorker) {
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New content is available, prompt user to refresh
+                                    showUpdateAvailableNotification();
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Listen for controlling service worker changes
+                    let refreshing = false;
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        if (!refreshing) {
+                            refreshing = true;
+                            window.location.reload();
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.error('ServiceWorker registration failed:', error);
+                }
+            });
+        }
+        
+        // Show update notification
+        function showUpdateAvailableNotification() {
+            if (window.showNotification) {
+                window.showNotification(
+                    'Update Available',
+                    'A new version of the app is available. Refresh to update.',
+                    'info',
+                    8000,
+                    [{
+                        text: 'Refresh Now',
+                        action: () => {
+                            navigator.serviceWorker.controller?.postMessage({ type: 'SKIP_WAITING' });
+                        }
+                    }]
+                );
+            }
+        }
+    </script>
 </body>
 </html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - EOS Fitness Tracker</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #FF6B35, #004E89);
+            color: white;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        
+        .offline-container {
+            max-width: 400px;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .offline-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .offline-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .offline-message {
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+        
+        .offline-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid white;
+            background: transparent;
+            color: white;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: white;
+            color: #FF6B35;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #FF6B35;
+        }
+        
+        .btn-primary:hover {
+            background: transparent;
+            color: white;
+        }
+        
+        .cached-features {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            text-align: left;
+        }
+        
+        .cached-features h3 {
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .cached-features ul {
+            margin: 0;
+            padding-left: 1.2rem;
+        }
+        
+        .cached-features li {
+            margin-bottom: 0.25rem;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📴</div>
+        <h1 class="offline-title">You're Offline</h1>
+        <p class="offline-message">
+            No internet connection detected. Don't worry - you can still access your cached equipment data and settings.
+        </p>
+        
+        <div class="offline-actions">
+            <button class="btn btn-primary" onclick="window.location.reload()">Try Again</button>
+            <a href="/" class="btn">Go to App</a>
+        </div>
+        
+        <div class="cached-features">
+            <h3>Available Offline:</h3>
+            <ul>
+                <li>Browse equipment database</li>
+                <li>View your saved settings</li>
+                <li>Use equipment filters</li>
+                <li>Find equipment substitutes</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // Check for connectivity and auto-refresh when online
+        window.addEventListener('online', function() {
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        });
+        
+        // Update UI if we detect we're online
+        function checkConnectivity() {
+            if (navigator.onLine) {
+                const message = document.querySelector('.offline-message');
+                message.innerHTML = 'Connection restored! <br><em>Redirecting to app...</em>';
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            }
+        }
+        
+        // Check connectivity every 5 seconds
+        setInterval(checkConnectivity, 5000);
+        
+        // Initial check
+        checkConnectivity();
+    </script>
+</body>
+</html>

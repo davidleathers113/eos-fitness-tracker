@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Test - EOS Fitness Tracker</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 2rem auto; 
+            padding: 1rem;
+            background: #f5f5f5;
+        }
+        .test-section { 
+            background: white; 
+            padding: 1.5rem; 
+            margin: 1rem 0; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status { 
+            padding: 0.5rem; 
+            border-radius: 4px; 
+            margin: 0.5rem 0; 
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        button { 
+            background: #FF6B35; 
+            color: white; 
+            border: none; 
+            padding: 0.5rem 1rem; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 0.5rem 0.5rem 0.5rem 0;
+        }
+        button:hover { background: #e55a2b; }
+        code { 
+            background: #f1f1f1; 
+            padding: 0.2rem 0.4rem; 
+            border-radius: 3px; 
+            font-family: monospace;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>EOS Fitness Tracker - PWA Test Suite</h1>
+    
+    <div class="test-section">
+        <h2>🔧 Service Worker Test</h2>
+        <div id="sw-status" class="status warning">Checking...</div>
+        <button onclick="testServiceWorker()">Test Service Worker</button>
+        <button onclick="unregisterSW()">Unregister SW</button>
+        <div id="sw-details"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📱 Web App Manifest Test</h2>
+        <div id="manifest-status" class="status warning">Checking...</div>
+        <button onclick="testManifest()">Test Manifest</button>
+        <div id="manifest-details"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>💾 Caching Test</h2>
+        <div id="cache-status" class="status warning">Not tested</div>
+        <button onclick="testCaching()">Test Caching</button>
+        <button onclick="clearCaches()">Clear Caches</button>
+        <div id="cache-details"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🌐 Network Status Test</h2>
+        <div id="network-status" class="status warning">Checking...</div>
+        <button onclick="toggleNetwork()">Simulate Offline/Online</button>
+        <div id="network-details"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📥 Install Prompt Test</h2>
+        <div id="install-status" class="status warning">Checking...</div>
+        <button onclick="triggerInstall()">Trigger Install</button>
+        <div id="install-details"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📋 Test Log</h2>
+        <button onclick="clearLog()">Clear Log</button>
+        <div id="test-log" class="log"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[PWA Test] ${message}`);
+        }
+        
+        function clearLog() {
+            document.getElementById('test-log').innerHTML = '';
+        }
+        
+        function updateStatus(elementId, message, status) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${status}`;
+        }
+        
+        // Test Service Worker
+        async function testServiceWorker() {
+            try {
+                if ('serviceWorker' in navigator) {
+                    log('Service Worker API supported');
+                    
+                    const registration = await navigator.serviceWorker.register('/sw.js');
+                    log(`Service Worker registered with scope: ${registration.scope}`);
+                    
+                    if (registration.active) {
+                        updateStatus('sw-status', 'Service Worker active and running', 'success');
+                        document.getElementById('sw-details').innerHTML = `
+                            <p><strong>Scope:</strong> <code>${registration.scope}</code></p>
+                            <p><strong>State:</strong> ${registration.active.state}</p>
+                            <p><strong>Script URL:</strong> <code>${registration.active.scriptURL}</code></p>
+                        `;
+                    } else {
+                        updateStatus('sw-status', 'Service Worker registered but not active', 'warning');
+                    }
+                } else {
+                    updateStatus('sw-status', 'Service Worker not supported', 'error');
+                    log('Service Worker not supported in this browser');
+                }
+            } catch (error) {
+                updateStatus('sw-status', 'Service Worker registration failed', 'error');
+                log(`Service Worker error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function unregisterSW() {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                        log(`Service Worker unregistered: ${registration.scope}`);
+                    }
+                    updateStatus('sw-status', 'Service Worker unregistered', 'warning');
+                }
+            } catch (error) {
+                log(`Error unregistering service worker: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test Manifest
+        async function testManifest() {
+            try {
+                const response = await fetch('/manifest.json');
+                if (response.ok) {
+                    const manifest = await response.json();
+                    log('Manifest loaded successfully');
+                    updateStatus('manifest-status', 'Manifest valid and accessible', 'success');
+                    
+                    document.getElementById('manifest-details').innerHTML = `
+                        <p><strong>Name:</strong> ${manifest.name}</p>
+                        <p><strong>Short Name:</strong> ${manifest.short_name}</p>
+                        <p><strong>Start URL:</strong> <code>${manifest.start_url}</code></p>
+                        <p><strong>Display:</strong> ${manifest.display}</p>
+                        <p><strong>Theme Color:</strong> ${manifest.theme_color}</p>
+                        <p><strong>Icons:</strong> ${manifest.icons.length} icons defined</p>
+                    `;
+                } else {
+                    updateStatus('manifest-status', 'Manifest not accessible', 'error');
+                    log(`Manifest fetch error: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                updateStatus('manifest-status', 'Manifest test failed', 'error');
+                log(`Manifest error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test Caching
+        async function testCaching() {
+            try {
+                if ('caches' in window) {
+                    log('Cache API supported');
+                    
+                    const cacheNames = await caches.keys();
+                    log(`Found ${cacheNames.length} cache(s): ${cacheNames.join(', ')}`);
+                    
+                    // Test cache functionality
+                    const testCache = await caches.open('pwa-test-cache');
+                    await testCache.put('/test-cache-entry', new Response('Test data'));
+                    
+                    const cachedResponse = await testCache.match('/test-cache-entry');
+                    if (cachedResponse) {
+                        const data = await cachedResponse.text();
+                        log(`Cache test successful: ${data}`);
+                        updateStatus('cache-status', 'Caching working correctly', 'success');
+                        
+                        document.getElementById('cache-details').innerHTML = `
+                            <p><strong>Available Caches:</strong> ${cacheNames.length}</p>
+                            <p><strong>Cache Names:</strong> ${cacheNames.join(', ')}</p>
+                            <p><strong>Test Cache:</strong> Created and tested successfully</p>
+                        `;
+                    }
+                    
+                    // Clean up test cache
+                    await caches.delete('pwa-test-cache');
+                } else {
+                    updateStatus('cache-status', 'Cache API not supported', 'error');
+                    log('Cache API not supported');
+                }
+            } catch (error) {
+                updateStatus('cache-status', 'Caching test failed', 'error');
+                log(`Caching error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function clearCaches() {
+            try {
+                const cacheNames = await caches.keys();
+                for (const cacheName of cacheNames) {
+                    await caches.delete(cacheName);
+                    log(`Deleted cache: ${cacheName}`);
+                }
+                updateStatus('cache-status', 'All caches cleared', 'warning');
+            } catch (error) {
+                log(`Error clearing caches: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test Network Status
+        function testNetworkStatus() {
+            const isOnline = navigator.onLine;
+            log(`Network status: ${isOnline ? 'Online' : 'Offline'}`);
+            updateStatus('network-status', 
+                isOnline ? 'Browser reports ONLINE' : 'Browser reports OFFLINE', 
+                isOnline ? 'success' : 'warning'
+            );
+            
+            document.getElementById('network-details').innerHTML = `
+                <p><strong>Navigator.onLine:</strong> ${isOnline}</p>
+                <p><strong>Connection:</strong> ${navigator.connection ? navigator.connection.effectiveType : 'Unknown'}</p>
+            `;
+        }
+        
+        function toggleNetwork() {
+            // This is simulation only - real network control requires dev tools
+            testNetworkStatus();
+            log('Note: Actual offline testing requires browser dev tools or network disconnection');
+        }
+        
+        // Test Install Prompt
+        function triggerInstall() {
+            log('Install prompt test - this requires the app to be installable');
+            if (window.deferredPrompt) {
+                log('Install prompt available');
+                updateStatus('install-status', 'Install prompt ready', 'success');
+            } else {
+                updateStatus('install-status', 'No install prompt available', 'warning');
+                log('No deferred install prompt found - app may already be installed or not meet PWA criteria');
+            }
+        }
+        
+        // Initialize tests on page load
+        window.addEventListener('load', async () => {
+            log('PWA Test Suite loaded');
+            testNetworkStatus();
+            
+            // Auto-run basic tests
+            setTimeout(async () => {
+                await testServiceWorker();
+                await testManifest();
+            }, 1000);
+        });
+        
+        // Listen for network changes
+        window.addEventListener('online', () => {
+            log('Network: Back online');
+            testNetworkStatus();
+        });
+        
+        window.addEventListener('offline', () => {
+            log('Network: Gone offline');
+            testNetworkStatus();
+        });
+        
+        // Listen for install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            log('Install prompt event fired');
+            window.deferredPrompt = e;
+            updateStatus('install-status', 'Install prompt available', 'success');
+        });
+        
+        window.addEventListener('appinstalled', () => {
+            log('App was installed');
+            updateStatus('install-status', 'App successfully installed', 'success');
+        });
+    </script>
+</body>
+</html>

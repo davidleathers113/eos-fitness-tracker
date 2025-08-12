@@ -334,6 +334,173 @@ function handleGlobalKeydown(event) {
     keyboardManager.handleShortcut(event);
 }
 
+// Skeleton card creator
+function createSkeletonCard() {
+    const card = document.createElement('div');
+    card.className = 'skeleton-card';
+    card.setAttribute('aria-hidden', 'true');
+    
+    card.innerHTML = `
+        <div class="skeleton-header">
+            <div class="skeleton-title"></div>
+            <div class="skeleton-badge"></div>
+        </div>
+        <div class="skeleton-body">
+            <div class="skeleton-type"></div>
+            <div class="skeleton-muscles">
+                <div class="skeleton-muscle-line"></div>
+                <div class="skeleton-muscle-line"></div>
+            </div>
+            <div class="skeleton-settings"></div>
+        </div>
+        <div class="skeleton-actions">
+            <div class="skeleton-button"></div>
+            <div class="skeleton-button"></div>
+            <div class="skeleton-button"></div>
+        </div>
+    `;
+    
+    return card;
+}
+
+// Incremental rendering manager for performance
+const incrementalRenderer = {
+    batchSize: 12,
+    renderDelay: 16, // ~60fps
+    
+    async renderEquipmentBatches(equipment, container) {
+        // Clear existing content
+        container.innerHTML = '';
+        
+        if (equipment.length === 0) {
+            const noResults = createEnhancedEmptyState();
+            container.appendChild(noResults);
+            return;
+        }
+        
+        // Show skeleton loading for remaining items
+        if (equipment.length > this.batchSize) {
+            const skeletonFragment = document.createDocumentFragment();
+            const skeletonCount = Math.min(equipment.length - this.batchSize, this.batchSize);
+            
+            for (let i = 0; i < skeletonCount; i++) {
+                skeletonFragment.appendChild(createSkeletonCard());
+            }
+            container.appendChild(skeletonFragment);
+        }
+        
+        // Render first batch synchronously for immediate feedback
+        const firstBatch = equipment.slice(0, this.batchSize);
+        const firstBatchFragment = document.createDocumentFragment();
+        
+        firstBatch.forEach(eq => {
+            const card = createEquipmentCardSafe(eq);
+            firstBatchFragment.appendChild(card);
+        });
+        
+        // Insert first batch at the beginning
+        container.insertBefore(firstBatchFragment, container.firstChild);
+        
+        // Render remaining batches asynchronously, replacing skeletons
+        if (equipment.length > this.batchSize) {
+            await this.renderRemainingBatches(equipment.slice(this.batchSize), container);
+        }
+    },
+    
+    async renderRemainingBatches(remainingEquipment, container) {
+        let processedCount = 0;
+        
+        for (let i = 0; i < remainingEquipment.length; i += this.batchSize) {
+            const batch = remainingEquipment.slice(i, i + this.batchSize);
+            
+            // Use requestIdleCallback for non-blocking rendering
+            await new Promise(resolve => {
+                const renderBatch = (deadline) => {
+                    const fragment = document.createDocumentFragment();
+                    
+                    for (const equipment of batch) {
+                        // Check if we still have time in this frame
+                        if (deadline && deadline.timeRemaining() > 0) {
+                            const card = createEquipmentCardSafe(equipment);
+                            fragment.appendChild(card);
+                        } else {
+                            // If we run out of time, schedule the rest for later
+                            break;
+                        }
+                    }
+                    
+                    if (fragment.children.length > 0) {
+                        // Replace skeleton cards with real cards
+                        const skeletons = container.querySelectorAll('.skeleton-card');
+                        const fragmentChildren = Array.from(fragment.children);
+                        
+                        fragmentChildren.forEach((realCard, index) => {
+                            if (skeletons[processedCount + index]) {
+                                container.replaceChild(realCard, skeletons[processedCount + index]);
+                            } else {
+                                container.appendChild(realCard);
+                            }
+                        });
+                        
+                        processedCount += fragmentChildren.length;
+                    }
+                    
+                    resolve();
+                };
+                
+                if (window.requestIdleCallback) {
+                    window.requestIdleCallback(renderBatch);
+                } else {
+                    // Fallback for browsers without requestIdleCallback
+                    setTimeout(() => renderBatch({ timeRemaining: () => 5 }), this.renderDelay);
+                }
+            });
+        }
+        
+        // Remove any remaining skeleton cards
+        const remainingSkeletons = container.querySelectorAll('.skeleton-card');
+        remainingSkeletons.forEach(skeleton => skeleton.remove());
+    }
+};
+
+// Sticky filters management
+const stickyFiltersManager = {
+    init() {
+        const filtersSection = document.querySelector('.filters-section');
+        if (!filtersSection) return;
+
+        // Create a sentinel element above the filters to detect when it becomes sticky
+        const sentinel = document.createElement('div');
+        sentinel.className = 'sticky-sentinel';
+        sentinel.style.height = '1px';
+        sentinel.style.position = 'absolute';
+        sentinel.style.top = '0';
+        sentinel.style.left = '0';
+        sentinel.style.width = '100%';
+        
+        // Insert sentinel before the filters section
+        filtersSection.parentNode.insertBefore(sentinel, filtersSection);
+
+        // Create intersection observer to detect when sentinel goes out of view
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                // When sentinel is not intersecting, filters are sticky
+                if (!entry.isIntersecting) {
+                    filtersSection.classList.add('sticky');
+                } else {
+                    filtersSection.classList.remove('sticky');
+                }
+            },
+            {
+                rootMargin: '0px 0px -1px 0px', // Trigger just before leaving viewport
+                threshold: 0
+            }
+        );
+
+        observer.observe(sentinel);
+    }
+};
+
 // URL State Management
 const urlStateManager = {
     // Update URL with current filter state
@@ -404,6 +571,158 @@ const urlStateManager = {
     }
 };
 
+// Theme Manager
+const themeManager = {
+    currentTheme: 'auto',
+    
+    init() {
+        // Get stored theme preference or default to auto
+        this.currentTheme = localStorage.getItem('eos-theme-preference') || 'auto';
+        
+        // Apply theme immediately
+        this.applyTheme(this.currentTheme);
+        
+        // Set up theme toggle button
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => this.toggleTheme());
+        }
+        
+        // Update theme icon
+        this.updateThemeIcon();
+        
+        // Listen for system theme changes
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if (this.currentTheme === 'auto') {
+                    this.updateThemeIcon();
+                }
+            });
+        }
+    },
+    
+    applyTheme(theme) {
+        const html = document.documentElement;
+        
+        // Remove existing theme classes
+        html.removeAttribute('data-theme');
+        
+        if (theme === 'light') {
+            html.setAttribute('data-theme', 'light');
+        } else if (theme === 'dark') {
+            html.setAttribute('data-theme', 'dark');
+        }
+        // For 'auto', rely on CSS media query
+        
+        this.currentTheme = theme;
+        localStorage.setItem('eos-theme-preference', theme);
+    },
+    
+    toggleTheme() {
+        const themes = ['auto', 'light', 'dark'];
+        const currentIndex = themes.indexOf(this.currentTheme);
+        const nextTheme = themes[(currentIndex + 1) % themes.length];
+        
+        this.applyTheme(nextTheme);
+        this.updateThemeIcon();
+        
+        // Announce theme change
+        const themeName = nextTheme === 'auto' ? 'automatic (follows system)' : nextTheme;
+        announceToScreenReader(`Theme changed to ${themeName}`);
+    },
+    
+    updateThemeIcon() {
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = themeToggle?.querySelector('.theme-icon');
+        
+        if (!themeIcon) return;
+        
+        let icon, label;
+        
+        if (this.currentTheme === 'light') {
+            icon = '☀️';
+            label = 'Switch to dark theme';
+        } else if (this.currentTheme === 'dark') {
+            icon = '🌙';
+            label = 'Switch to automatic theme';
+        } else { // auto
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            icon = prefersDark ? '🌓' : '🌞';
+            label = 'Switch to light theme';
+        }
+        
+        themeIcon.textContent = icon;
+        themeToggle.setAttribute('aria-label', label);
+        themeToggle.setAttribute('title', label);
+    }
+};
+
+// Density Manager
+const densityManager = {
+    currentDensity: 'comfortable',
+    
+    init() {
+        // Get stored density preference or default to comfortable
+        this.currentDensity = localStorage.getItem('eos-density-preference') || 'comfortable';
+        
+        // Apply density immediately
+        this.applyDensity(this.currentDensity);
+        
+        // Set up density toggle button
+        const densityToggle = document.getElementById('density-toggle');
+        if (densityToggle) {
+            densityToggle.addEventListener('click', () => this.toggleDensity());
+        }
+        
+        // Update density icon
+        this.updateDensityIcon();
+    },
+    
+    applyDensity(density) {
+        const body = document.body;
+        
+        // Remove existing density classes
+        body.classList.remove('density-comfortable', 'density-compact');
+        
+        // Add new density class
+        body.classList.add(`density-${density}`);
+        
+        this.currentDensity = density;
+        localStorage.setItem('eos-density-preference', density);
+    },
+    
+    toggleDensity() {
+        const newDensity = this.currentDensity === 'comfortable' ? 'compact' : 'comfortable';
+        
+        this.applyDensity(newDensity);
+        this.updateDensityIcon();
+        
+        // Announce density change
+        announceToScreenReader(`View density changed to ${newDensity}`);
+    },
+    
+    updateDensityIcon() {
+        const densityToggle = document.getElementById('density-toggle');
+        const densityIcon = densityToggle?.querySelector('.density-icon');
+        
+        if (!densityIcon) return;
+        
+        let icon, label;
+        
+        if (this.currentDensity === 'comfortable') {
+            icon = '⚏'; // comfortable spacing
+            label = 'Switch to compact view';
+        } else {
+            icon = '⚌'; // compact spacing
+            label = 'Switch to comfortable view';
+        }
+        
+        densityIcon.textContent = icon;
+        densityToggle.setAttribute('aria-label', label);
+        densityToggle.setAttribute('title', label);
+    }
+};
+
 // Utility: Safe muscle data extraction
 function safeMuscles(equipment) {
     return {
@@ -417,6 +736,117 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Enhanced Empty State Creator
+function createEnhancedEmptyState() {
+    const container = document.createElement('div');
+    container.className = 'no-results enhanced';
+    
+    // Icon
+    const icon = document.createElement('span');
+    icon.className = 'no-results-icon';
+    icon.textContent = '🔍';
+    icon.setAttribute('aria-hidden', 'true');
+    
+    // Title
+    const title = document.createElement('h3');
+    title.className = 'no-results-title';
+    title.textContent = 'No Equipment Found';
+    
+    // Message
+    const message = document.createElement('p');
+    message.className = 'no-results-message';
+    
+    const hasActiveFilters = filterState.zone !== 'all' || 
+                           filterState.muscle !== 'all' || 
+                           filterState.search !== '';
+    
+    if (hasActiveFilters) {
+        message.textContent = 'No equipment matches your current search and filter criteria. Try adjusting or clearing your filters to see more results.';
+        
+        // Active filters section
+        const filtersSection = document.createElement('div');
+        filtersSection.className = 'no-results-filters';
+        
+        const filtersTitle = document.createElement('h4');
+        filtersTitle.textContent = 'Active Filters:';
+        
+        const filtersList = document.createElement('ul');
+        filtersList.className = 'active-filters-list';
+        
+        if (filterState.zone !== 'all') {
+            const zoneItem = document.createElement('li');
+            zoneItem.textContent = `Zone: ${filterState.zone}`;
+            filtersList.appendChild(zoneItem);
+        }
+        
+        if (filterState.muscle !== 'all') {
+            const muscleItem = document.createElement('li');
+            muscleItem.textContent = `Muscle: ${filterState.muscle.charAt(0).toUpperCase() + filterState.muscle.slice(1)}`;
+            filtersList.appendChild(muscleItem);
+        }
+        
+        if (filterState.search) {
+            const searchItem = document.createElement('li');
+            searchItem.textContent = `Search: "${filterState.search}"`;
+            filtersList.appendChild(searchItem);
+        }
+        
+        filtersSection.appendChild(filtersTitle);
+        filtersSection.appendChild(filtersList);
+        container.appendChild(filtersSection);
+        
+    } else {
+        message.textContent = 'It looks like there might be an issue loading the equipment database. Please try refreshing the page or check your internet connection.';
+    }
+    
+    // Actions
+    const actions = document.createElement('div');
+    actions.className = 'no-results-actions';
+    
+    if (hasActiveFilters) {
+        // Clear all filters button
+        const clearAllBtn = document.createElement('button');
+        clearAllBtn.className = 'no-results-btn';
+        clearAllBtn.innerHTML = '<span>🗑️</span> Clear All Filters';
+        clearAllBtn.addEventListener('click', () => {
+            clearAllFilters();
+            announceToScreenReader('All filters cleared, showing all equipment');
+        });
+        actions.appendChild(clearAllBtn);
+        
+        // Show all equipment button
+        const showAllBtn = document.createElement('button');
+        showAllBtn.className = 'no-results-btn secondary';
+        showAllBtn.innerHTML = '<span>📋</span> Browse All Equipment';
+        showAllBtn.addEventListener('click', () => {
+            clearAllFilters();
+            // Scroll to top smoothly
+            document.querySelector('.main-content').scrollIntoView({ 
+                behavior: 'smooth' 
+            });
+        });
+        actions.appendChild(showAllBtn);
+        
+    } else {
+        // Refresh page button
+        const refreshBtn = document.createElement('button');
+        refreshBtn.className = 'no-results-btn';
+        refreshBtn.innerHTML = '<span>🔄</span> Refresh Page';
+        refreshBtn.addEventListener('click', () => {
+            window.location.reload();
+        });
+        actions.appendChild(refreshBtn);
+    }
+    
+    // Assemble the empty state
+    container.appendChild(icon);
+    container.appendChild(title);
+    container.appendChild(message);
+    container.appendChild(actions);
+    
+    return container;
 }
 
 // API Client Layer for Netlify Functions
@@ -1183,17 +1613,7 @@ function handleGlobalKeydown(event) {
     }
 }
 
-// Screen reader announcements
-function announceToScreenReader(message) {
-    const announcer = document.getElementById('sr-announcements');
-    if (announcer) {
-        announcer.textContent = message;
-        // Clear after announcement to avoid repetition
-        setTimeout(() => {
-            announcer.textContent = '';
-        }, 1000);
-    }
-}
+// Screen reader announcements (using debounced version defined above)
 
 // Show About dialog (replaces alert)
 function showAboutDialog() {
@@ -1245,18 +1665,233 @@ function showAboutDialog() {
     });
 }
 
+// PWA Offline Queue System
+class OfflineQueue {
+    constructor() {
+        this.queue = this.loadQueue();
+        this.isProcessing = false;
+    }
+    
+    loadQueue() {
+        try {
+            return JSON.parse(localStorage.getItem('eos-offline-queue') || '[]');
+        } catch {
+            return [];
+        }
+    }
+    
+    saveQueue() {
+        try {
+            localStorage.setItem('eos-offline-queue', JSON.stringify(this.queue));
+        } catch (error) {
+            console.error('Failed to save offline queue:', error);
+        }
+    }
+    
+    add(action) {
+        const queueItem = {
+            id: Date.now() + Math.random(),
+            type: action.type,
+            data: action.data,
+            timestamp: new Date().toISOString(),
+            retryCount: 0
+        };
+        
+        this.queue.push(queueItem);
+        this.saveQueue();
+        
+        // Try to process immediately if online
+        if (navigator.onLine) {
+            this.processQueue();
+        }
+        
+        return queueItem.id;
+    }
+    
+    remove(id) {
+        this.queue = this.queue.filter(item => item.id !== id);
+        this.saveQueue();
+    }
+    
+    async processQueue() {
+        if (this.isProcessing || !navigator.onLine || this.queue.length === 0) {
+            return;
+        }
+        
+        this.isProcessing = true;
+        console.log(`Processing ${this.queue.length} queued actions...`);
+        
+        const itemsToProcess = [...this.queue];
+        
+        for (const item of itemsToProcess) {
+            try {
+                await this.processQueueItem(item);
+                this.remove(item.id);
+            } catch (error) {
+                console.error('Failed to process queue item:', item, error);
+                
+                item.retryCount = (item.retryCount || 0) + 1;
+                
+                // Remove items that have failed too many times
+                if (item.retryCount >= 3) {
+                    console.warn('Removing failed queue item after 3 retries:', item);
+                    this.remove(item.id);
+                    showNotification(
+                        'Some changes could not be synced and were discarded',
+                        'error'
+                    );
+                }
+            }
+        }
+        
+        this.saveQueue();
+        this.isProcessing = false;
+        
+        if (this.queue.length === 0) {
+            showNotification('All changes synced successfully', 'success');
+        }
+    }
+    
+    async processQueueItem(item) {
+        switch (item.type) {
+            case 'save-settings':
+                return await ApiClient.saveUserSettings(item.data);
+            case 'save-workout':
+                return await ApiClient.saveWorkoutLog(item.data);
+            default:
+                throw new Error(`Unknown queue item type: ${item.type}`);
+        }
+    }
+    
+    getQueueStatus() {
+        return {
+            count: this.queue.length,
+            isProcessing: this.isProcessing,
+            oldestItem: this.queue[0]?.timestamp
+        };
+    }
+}
+
+// Initialize offline queue
+const offlineQueue = new OfflineQueue();
+
+// PWA Install Prompt Handler
+let deferredPrompt;
+let installPromptShown = false;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('PWA install prompt available');
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Show install prompt after user has used the app a bit
+    setTimeout(() => {
+        if (!installPromptShown && !window.matchMedia('(display-mode: standalone)').matches) {
+            showInstallPrompt();
+        }
+    }, 30000); // Show after 30 seconds
+});
+
+window.addEventListener('appinstalled', (e) => {
+    console.log('PWA was installed');
+    showNotification('App installed successfully! 🎉', 'success');
+    deferredPrompt = null;
+});
+
+function showInstallPrompt() {
+    if (!deferredPrompt || installPromptShown) return;
+    
+    installPromptShown = true;
+    
+    showNotification(
+        'Install EOS Fitness Tracker for a better experience',
+        'info',
+        10000,
+        [{
+            text: 'Install App',
+            action: () => installPWA()
+        }, {
+            text: 'Maybe Later',
+            action: () => {}
+        }]
+    );
+}
+
+async function installPWA() {
+    if (!deferredPrompt) return;
+    
+    try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+        } else {
+            console.log('User dismissed the install prompt');
+        }
+    } catch (error) {
+        console.error('Error showing install prompt:', error);
+    }
+    
+    deferredPrompt = null;
+}
+
+// Enhanced offline detection with visual indicators
+function updateOfflineStatus() {
+    const syncStatus = document.getElementById('sync-status');
+    const syncIndicator = syncStatus?.querySelector('.sync-indicator');
+    const syncText = syncStatus?.querySelector('.sync-text');
+    
+    if (!syncStatus) return;
+    
+    const isOnline = navigator.onLine;
+    const queueStatus = offlineQueue.getQueueStatus();
+    
+    if (isOnline) {
+        syncIndicator.className = 'sync-indicator online';
+        if (queueStatus.count > 0) {
+            syncText.textContent = `Syncing (${queueStatus.count})`;
+            syncStatus.title = 'Syncing pending changes...';
+        } else {
+            syncText.textContent = 'Online';
+            syncStatus.title = 'Connected and up to date';
+        }
+    } else {
+        syncIndicator.className = 'sync-indicator offline';
+        if (queueStatus.count > 0) {
+            syncText.textContent = `Offline (${queueStatus.count} pending)`;
+            syncStatus.title = `${queueStatus.count} changes will sync when online`;
+        } else {
+            syncText.textContent = 'Offline';
+            syncStatus.title = 'No internet connection';
+        }
+    }
+    
+    // Add/remove offline class to body for styling
+    document.body.classList.toggle('is-offline', !isOnline);
+}
+
 // Listen for online/offline events
 window.addEventListener('online', () => {
     ApiClient.updateNetworkStatus();
     updateUserStatus();
+    updateOfflineStatus();
+    
+    // Process queued actions
+    offlineQueue.processQueue();
+    
     showNotification('Back online - data will sync', 'success');
 });
 
 window.addEventListener('offline', () => {
     ApiClient.updateNetworkStatus();
     updateUserStatus();
+    updateOfflineStatus();
     showNotification('Offline mode - changes saved locally', 'warning');
 });
+
+// Periodically update offline status
+setInterval(updateOfflineStatus, 5000);
 
 // Utility: Batched localStorage saves (kept for offline fallback)
 let pendingSave = null;
@@ -1281,6 +1916,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize authentication
     const isAuthenticated = ApiClient.initAuth();
     console.log('Authentication status:', isAuthenticated ? 'Authenticated' : 'Not authenticated');
+    
+    // Initialize theme and density managers
+    themeManager.init();
+    densityManager.init();
     
     // Set up authentication form listeners
     document.getElementById('register-form').addEventListener('submit', handleRegistration);
@@ -1323,6 +1962,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Update UI regardless of auth status
     updateUserStatus();
+    updateOfflineStatus(); // Initialize offline status indicators
     setupEventListeners();
     displayEquipment();
     updateUI();
@@ -1827,6 +2467,9 @@ function setupEventListeners() {
     // Initialize filter chips display
     updateFilterChips();
     
+    // Initialize sticky filters
+    stickyFiltersManager.init();
+    
     // Keyboard help modal close button
     const keyboardHelpCloseBtn = document.querySelector('[data-action="close-keyboard-help"]');
     if (keyboardHelpCloseBtn) {
@@ -1914,14 +2557,9 @@ function showView(viewName) {
 }
 
 // Equipment Display Functions
-function displayEquipment() {
+async function displayEquipment() {
     const container = document.getElementById('equipment-list');
     if (!container || !equipmentData.equipment) return;
-    
-    // Clear container safely
-    while (container.firstChild) {
-        container.removeChild(container.firstChild);
-    }
     
     // Filter equipment
     let filtered = equipmentData.equipment;
@@ -1948,19 +2586,8 @@ function displayEquipment() {
         });
     }
     
-    // Display filtered equipment
-    if (filtered.length === 0) {
-        const noResults = document.createElement('p');
-        noResults.className = 'no-results';
-        noResults.textContent = 'No equipment found matching your filters';
-        container.appendChild(noResults);
-        return;
-    }
-    
-    filtered.forEach(equipment => {
-        const card = createEquipmentCardSafe(equipment);
-        container.appendChild(card);
-    });
+    // Use incremental rendering for better performance
+    await incrementalRenderer.renderEquipmentBatches(filtered, container);
     
     const statusMessage = `Showing ${filtered.length} of ${equipmentData.equipment.length} machines`;
     updateStatusBar(statusMessage);
@@ -2663,7 +3290,7 @@ async function saveWorkout() {
         const response = await ApiClient.addWorkout(workout);
         
         if (response.error) {
-            // Fallback to local storage
+            // Fallback to local storage and queue for sync
             console.warn('API save failed, using localStorage:', response.message);
             workoutLogs.workouts.push(workout);
             
@@ -2678,6 +3305,13 @@ async function saveWorkout() {
             }
             
             localStorage.setItem('eosFitnessLogs', JSON.stringify(workoutLogs));
+            
+            // Queue for sync when online
+            offlineQueue.add({
+                type: 'save-workout',
+                data: workout
+            });
+            
             showNotification('Workout saved locally - will sync when online', 'warning');
         } else {
             // Successfully saved to cloud
@@ -2693,11 +3327,18 @@ async function saveWorkout() {
     } catch (error) {
         console.error('Error saving workout:', error);
         
-        // Fallback to localStorage
+        // Fallback to localStorage and queue for sync
         try {
             workoutLogs.workouts.push(workout);
             localStorage.setItem('eosFitnessLogs', JSON.stringify(workoutLogs));
-            showNotification('Workout saved locally due to error', 'warning');
+            
+            // Queue for sync when online
+            offlineQueue.add({
+                type: 'save-workout',
+                data: workout
+            });
+            
+            showNotification('Workout saved locally - will sync when online', 'warning');
             currentWorkout = [];
             displayWorkoutBuilder();
         } catch (localError) {
@@ -2707,28 +3348,44 @@ async function saveWorkout() {
     }
 }
 
-// Enhanced settings save function
+// Enhanced settings save function with offline queue support
 async function saveSettingsToCloud() {
+    // Always save locally first
+    saveSettingsToLocalBatched();
+    
+    if (!navigator.onLine) {
+        // Queue for later sync when online
+        offlineQueue.add({
+            type: 'save-settings',
+            data: mySettings
+        });
+        console.log('Settings queued for sync when online');
+        return false;
+    }
+    
     try {
         const response = await ApiClient.saveSettings(mySettings);
         
         if (response.error) {
             console.warn('Cloud save failed:', response.message);
-            // Keep using local batched save as fallback
-            saveSettingsToLocalBatched();
+            // Queue for retry
+            offlineQueue.add({
+                type: 'save-settings',
+                data: mySettings
+            });
             return false;
         }
-        
-        // Also save locally for offline access
-        saveSettingsToLocalBatched();
         
         showNotification('Settings synced to cloud', 'success');
         return true;
         
     } catch (error) {
         console.error('Error saving settings to cloud:', error);
-        // Fallback to local save
-        saveSettingsToLocalBatched();
+        // Queue for retry when online
+        offlineQueue.add({
+            type: 'save-settings',
+            data: mySettings
+        });
         return false;
     }
 }
