@@ -1,32 +1,17 @@
 const { getStore, connectLambda } = require("@netlify/blobs");
+const { createLogger, formatErrorResponse, formatSuccessResponse } = require("./_shared/logger");
+const { authenticateUser, checkRateLimit } = require("./_shared/auth");
 const fs = require('fs/promises');
 const path = require('path');
 
-// Generate or retrieve user ID from headers
-function getUserId(event) {
-  let userId = event.headers['x-user-id'];
-  
-  if (!userId && event.body) {
-    try {
-      const body = JSON.parse(event.body);
-      userId = body.userId;
-    } catch (e) {
-      // Ignore parse errors
-    }
-  }
-  
-  if (!userId) {
-    return null; // Export requires user ID
-  }
-  
-  return userId;
-}
+// This function is deprecated - replaced by secure authentication
+// Kept for reference during migration period
 
 // Load equipment database from static file
 async function loadEquipmentDatabase() {
   try {
-    // In Netlify Functions, the build directory is accessible
-    const equipmentPath = path.resolve('./database/equipment-database.json');
+    // Use __dirname for more robust path resolution
+    const equipmentPath = path.resolve(__dirname, '../../database/equipment-database.json');
     const equipmentData = await fs.readFile(equipmentPath, 'utf8');
     return JSON.parse(equipmentData);
   } catch (error) {
@@ -47,15 +32,23 @@ async function loadEquipmentDatabase() {
 exports.handler = async (event, context) => {
   // Initialize Netlify Blobs in Lambda compatibility (Functions API v1)
   connectLambda(event);
+  
+  // Create structured logger for this request
+  const logger = createLogger('export-data', event, context);
+  logger.info('Function invoked', { method: event.httpMethod });
+  
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, x-user-id',
+    'Access-Control-Allow-Origin': process.env.CORS_ORIGIN || 'https://eos-fitness-tracker.netlify.app',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-user-token',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store, max-age=0',
+    'Vary': 'Origin'
   };
 
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
+    logger.info('CORS preflight request handled');
     return {
       statusCode: 200,
       headers,
@@ -64,23 +57,49 @@ exports.handler = async (event, context) => {
   }
 
   if (event.httpMethod !== 'GET') {
+    logger.warn('Method not allowed', { method: event.httpMethod });
+    const errorResponse = formatErrorResponse(logger, new Error(`Method ${event.httpMethod} not allowed`), 'Method not allowed');
     return {
       statusCode: 405,
       headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
+      body: JSON.stringify(errorResponse)
     };
   }
 
   try {
-    const userId = getUserId(event);
+    // Rate limiting check
+    const clientIp = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || event.headers['x-nf-client-connection-ip'] || 'unknown';
+    const rateLimit = checkRateLimit(clientIp, 300000, 5); // 5 exports per 5 minutes
     
-    if (!userId) {
+    if (!rateLimit.allowed) {
+      logger.warn('Rate limit exceeded for export', { ip: clientIp });
+      const errorResponse = formatErrorResponse(logger, new Error('Rate limit exceeded'), 'Too many export requests');
       return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'User ID required in x-user-id header or request body' })
+        statusCode: 429,
+        headers: {
+          ...headers,
+          'Retry-After': Math.ceil((rateLimit.resetTime - Date.now()) / 1000).toString()
+        },
+        body: JSON.stringify(errorResponse)
       };
     }
+
+    // Authenticate user
+    const auth = authenticateUser(event, logger);
+    if (!auth.authenticated) {
+      const errorResponse = formatErrorResponse(logger, new Error('Authentication failed'), auth.error || 'Authentication required');
+      return {
+        statusCode: 401,
+        headers,
+        body: JSON.stringify(errorResponse)
+      };
+    }
+
+    const userId = auth.userId;
+    logger.userAction('export-request', userId, { 
+      isLegacy: auth.isLegacy,
+      remainingRequests: rateLimit.remaining 
+    });
 
     // Get user stores
     const settingsStore = getStore("user-settings");
@@ -179,38 +198,52 @@ exports.handler = async (event, context) => {
           ...headers,
           'Content-Type': 'application/octet-stream',
           'Content-Disposition': `attachment; filename="${filename}"`,
-          'Content-Length': JSON.stringify(exportData).length.toString()
+          'Content-Length': Buffer.byteLength(JSON.stringify(exportData, null, 2), 'utf8').toString()
         },
         body: JSON.stringify(exportData, null, 2)
       };
     } else {
       // Return as JSON response
+      logger.info('Export completed successfully', { 
+        userId, 
+        totalWorkouts: exportData.metadata.total_workouts,
+        totalEquipment: exportData.metadata.total_equipment
+      });
+
+      const response = formatSuccessResponse({
+        export_data: exportData,
+        summary: {
+          user_id: userId,
+          total_workouts: exportData.metadata.total_workouts,
+          total_equipment: exportData.metadata.total_equipment,
+          export_timestamp: exportData.exported_at
+        }
+      }, logger);
+
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({
-          success: true,
-          export_data: exportData,
-          summary: {
-            user_id: userId,
-            total_workouts: exportData.metadata.total_workouts,
-            total_equipment: exportData.metadata.total_equipment,
-            export_timestamp: exportData.exported_at
-          }
-        })
+        body: JSON.stringify(response)
       };
     }
 
   } catch (error) {
-    console.error('Error in export-data function:', error);
-    
+    // Try to get userId for logging, but don't fail if auth fails
+    let userId = 'unknown';
+    try {
+      const auth = authenticateUser(event, logger);
+      if (auth.authenticated) userId = auth.userId;
+    } catch (authError) {
+      // Ignore auth errors in error handler
+    }
+
+    logger.error('Unexpected error in export-data function', error, { userId });
+
+    const errorResponse = formatErrorResponse(logger, error, 'An unexpected error occurred during export');
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ 
-        error: 'Internal server error',
-        message: error.message 
-      })
+      body: JSON.stringify(errorResponse)
     };
   }
 };
