@@ -37,7 +37,157 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Utility: Batched localStorage saves
+// API Client Layer for Netlify Functions
+const ApiClient = {
+    // User identification and management
+    userId: null,
+    isOnline: navigator.onLine,
+    
+    // Initialize user ID from localStorage or generate new one
+    initUserId() {
+        this.userId = localStorage.getItem('eos-user-id');
+        if (!this.userId) {
+            this.userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('eos-user-id', this.userId);
+        }
+        return this.userId;
+    },
+
+    // Network status tracking
+    updateNetworkStatus() {
+        this.isOnline = navigator.onLine;
+    },
+
+    // Generic API call with error handling and fallbacks
+    async makeRequest(endpoint, options = {}) {
+        if (!this.userId) this.initUserId();
+        
+        const defaultOptions = {
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-id': this.userId
+            }
+        };
+
+        const requestOptions = {
+            ...defaultOptions,
+            ...options,
+            headers: { ...defaultOptions.headers, ...options.headers }
+        };
+
+        try {
+            const response = await fetch(`/.netlify/functions/${endpoint}`, requestOptions);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error(`API Error (${endpoint}):`, error);
+            
+            // Return error object for handling by caller
+            return {
+                error: true,
+                message: error.message,
+                offline: !this.isOnline
+            };
+        }
+    },
+
+    // Settings API methods
+    async getSettings() {
+        return await this.makeRequest('user-settings', { method: 'GET' });
+    },
+
+    async saveSettings(settings) {
+        return await this.makeRequest('user-settings', {
+            method: 'POST',
+            body: JSON.stringify({ settings })
+        });
+    },
+
+    // Workout logs API methods
+    async getWorkoutLogs() {
+        return await this.makeRequest('workout-logs', { method: 'GET' });
+    },
+
+    async saveWorkoutLogs(logs) {
+        return await this.makeRequest('workout-logs', {
+            method: 'POST',
+            body: JSON.stringify({ logs })
+        });
+    },
+
+    async addWorkout(workout) {
+        return await this.makeRequest('workout-logs', {
+            method: 'POST',
+            body: JSON.stringify({ workout })
+        });
+    },
+
+    async updateWorkout(workoutId, workout) {
+        return await this.makeRequest('workout-logs', {
+            method: 'PUT',
+            body: JSON.stringify({ workoutId, workout })
+        });
+    },
+
+    async deleteWorkout(workoutId) {
+        return await this.makeRequest('workout-logs', {
+            method: 'DELETE',
+            body: JSON.stringify({ workoutId })
+        });
+    },
+
+    // Export functionality
+    async exportData(asDownload = false) {
+        const endpoint = asDownload ? 
+            'export-data?download=true' : 
+            'export-data';
+        return await this.makeRequest(endpoint, { method: 'GET' });
+    },
+
+    // Migration functionality
+    async migrateData(localSettings, localWorkoutLogs) {
+        return await this.makeRequest('migrate-data', {
+            method: 'POST',
+            body: JSON.stringify({
+                localSettings,
+                localWorkoutLogs,
+                requestedUserId: this.userId
+            })
+        });
+    },
+
+    // Check if migration is needed
+    shouldMigrate() {
+        const migrationComplete = localStorage.getItem('eos-migration-complete');
+        const hasLocalSettings = localStorage.getItem('eosFitnessSettings');
+        const hasLocalLogs = localStorage.getItem('eosFitnessLogs');
+        
+        return !migrationComplete && (hasLocalSettings || hasLocalLogs);
+    },
+
+    // Mark migration as complete
+    markMigrationComplete() {
+        localStorage.setItem('eos-migration-complete', 'true');
+        localStorage.setItem('eos-migration-date', new Date().toISOString());
+    }
+};
+
+// Listen for online/offline events
+window.addEventListener('online', () => {
+    ApiClient.updateNetworkStatus();
+    showNotification('Back online - data will sync', 'success');
+});
+
+window.addEventListener('offline', () => {
+    ApiClient.updateNetworkStatus();
+    showNotification('Offline mode - changes saved locally', 'warning');
+});
+
+// Utility: Batched localStorage saves (kept for offline fallback)
 let pendingSave = null;
 function saveSettingsToLocalBatched() {
     if (pendingSave) return;
@@ -95,51 +245,186 @@ async function loadEquipmentDatabase() {
 
 async function loadMySettings() {
     try {
-        // First try localStorage
-        const localSettings = localStorage.getItem('eosFitnessSettings');
-        if (localSettings) {
-            const parsed = JSON.parse(localSettings);
-            if (validateSettings(parsed)) {
-                mySettings = parsed;
-            }
+        // Check if migration is needed first
+        if (ApiClient.shouldMigrate()) {
+            await performDataMigration();
         }
+
+        // Load settings from API
+        const response = await ApiClient.getSettings();
         
-        // Then try loading from file
-        const response = await fetch('database/my-settings.json');
-        if (response.ok) {
-            const fileSettings = await response.json();
-            if (validateSettings(fileSettings)) {
-                // Merge with local settings, preferring local
-                mySettings = { ...fileSettings, ...mySettings };
+        if (response.error) {
+            console.warn('API Error loading settings:', response.message);
+            
+            // Fallback to localStorage if API fails
+            const localSettings = localStorage.getItem('eosFitnessSettings');
+            if (localSettings) {
+                const parsed = JSON.parse(localSettings);
+                if (validateSettings(parsed)) {
+                    mySettings = parsed;
+                    showNotification('Using offline data - will sync when online', 'warning');
+                    return;
+                }
+            }
+            
+            // Final fallback to default settings
+            mySettings = getDefaultSettings();
+            showNotification('Using default settings', 'info');
+        } else {
+            // Successfully loaded from API
+            mySettings = response.settings;
+            
+            // Cache locally for offline use
+            saveSettingsToLocalBatched();
+            
+            if (response.isNewUser) {
+                showNotification('Welcome! Your settings will sync across devices.', 'success');
             }
         }
     } catch (error) {
-        console.log('Creating new settings file');
+        console.error('Error loading settings:', error);
+        
+        // Fallback to localStorage or defaults
+        const localSettings = localStorage.getItem('eosFitnessSettings');
+        if (localSettings) {
+            try {
+                const parsed = JSON.parse(localSettings);
+                if (validateSettings(parsed)) {
+                    mySettings = parsed;
+                    showNotification('Offline mode - using local data', 'warning');
+                    return;
+                }
+            } catch (parseError) {
+                console.error('Error parsing local settings:', parseError);
+            }
+        }
+        
         mySettings = getDefaultSettings();
+        showNotification('Using default settings', 'info');
     }
-    saveSettingsToLocalBatched();
 }
 
 async function loadWorkoutLogs() {
     try {
-        const localLogs = localStorage.getItem('eosFitnessLogs');
-        if (localLogs) {
-            const parsed = JSON.parse(localLogs);
-            if (validateWorkoutLogs(parsed)) {
-                workoutLogs = parsed;
-            }
-        }
+        // Load workout logs from API
+        const response = await ApiClient.getWorkoutLogs();
         
-        const response = await fetch('database/workout-logs.json');
-        if (response.ok) {
-            const fileLogs = await response.json();
-            if (validateWorkoutLogs(fileLogs)) {
-                workoutLogs = { ...fileLogs, ...workoutLogs };
+        if (response.error) {
+            console.warn('API Error loading workout logs:', response.message);
+            
+            // Fallback to localStorage if API fails
+            const localLogs = localStorage.getItem('eosFitnessLogs');
+            if (localLogs) {
+                const parsed = JSON.parse(localLogs);
+                if (validateWorkoutLogs(parsed)) {
+                    workoutLogs = parsed;
+                    return;
+                }
+            }
+            
+            // Final fallback to default logs
+            workoutLogs = getDefaultWorkoutLogs();
+        } else {
+            // Successfully loaded from API
+            workoutLogs = response.logs;
+            
+            // Cache locally for offline use
+            try {
+                localStorage.setItem('eosFitnessLogs', JSON.stringify(workoutLogs));
+            } catch (error) {
+                console.warn('Unable to cache workout logs locally:', error);
             }
         }
     } catch (error) {
-        console.log('Creating new workout logs');
+        console.error('Error loading workout logs:', error);
+        
+        // Fallback to localStorage or defaults
+        const localLogs = localStorage.getItem('eosFitnessLogs');
+        if (localLogs) {
+            try {
+                const parsed = JSON.parse(localLogs);
+                if (validateWorkoutLogs(parsed)) {
+                    workoutLogs = parsed;
+                    return;
+                }
+            } catch (parseError) {
+                console.error('Error parsing local workout logs:', parseError);
+            }
+        }
+        
         workoutLogs = getDefaultWorkoutLogs();
+    }
+}
+
+// Data Migration Function
+async function performDataMigration() {
+    try {
+        const localSettings = localStorage.getItem('eosFitnessSettings');
+        const localLogs = localStorage.getItem('eosFitnessLogs');
+        
+        if (!localSettings && !localLogs) {
+            // No data to migrate
+            ApiClient.markMigrationComplete();
+            return;
+        }
+
+        showNotification('Migrating your data to cloud storage...', 'info');
+
+        let parsedSettings = null;
+        let parsedLogs = null;
+
+        // Parse and validate local data
+        if (localSettings) {
+            try {
+                parsedSettings = JSON.parse(localSettings);
+                if (!validateSettings(parsedSettings)) {
+                    parsedSettings = null;
+                    console.warn('Local settings invalid, skipping migration');
+                }
+            } catch (error) {
+                console.error('Error parsing local settings for migration:', error);
+            }
+        }
+
+        if (localLogs) {
+            try {
+                parsedLogs = JSON.parse(localLogs);
+                if (!validateWorkoutLogs(parsedLogs)) {
+                    parsedLogs = null;
+                    console.warn('Local logs invalid, skipping migration');
+                }
+            } catch (error) {
+                console.error('Error parsing local logs for migration:', error);
+            }
+        }
+
+        // Perform migration
+        const response = await ApiClient.migrateData(parsedSettings, parsedLogs);
+
+        if (response.error) {
+            console.error('Migration failed:', response.message);
+            showNotification('Migration failed - using local data', 'error');
+            return false;
+        }
+
+        // Migration successful
+        ApiClient.markMigrationComplete();
+        
+        const settingsCount = response.migration.settings.equipmentCount || 0;
+        const workoutsCount = response.migration.workoutLogs.totalWorkouts || 0;
+        
+        showNotification(
+            `Migration complete! ${settingsCount} equipment settings and ${workoutsCount} workouts synced.`,
+            'success'
+        );
+
+        console.log('Migration summary:', response.migration);
+        return true;
+
+    } catch (error) {
+        console.error('Error during migration:', error);
+        showNotification('Migration error - continuing with local data', 'error');
+        return false;
     }
 }
 
@@ -673,7 +958,7 @@ function saveEquipmentSettings(event, equipmentId) {
     };
     
     mySettings.last_updated = new Date().toISOString();
-    saveSettingsToLocalBatched();
+    saveSettingsToCloud();
     
     showNotification('Settings saved successfully!', 'success');
     displayEquipment(); // Refresh to show updated settings
@@ -831,7 +1116,7 @@ function saveUserPreferences(event) {
     mySettings.preferences.rest_between_sets = parseInt(formData.get('rest_between_sets'));
     
     mySettings.last_updated = new Date().toISOString();
-    saveSettingsToLocalBatched();
+    saveSettingsToCloud();
     
     showNotification('Preferences saved successfully!', 'success');
 }
@@ -1037,7 +1322,7 @@ function optimizeRoute() {
     showNotification('Workout route optimized by zone', 'success');
 }
 
-function saveWorkout() {
+async function saveWorkout() {
     if (currentWorkout.length === 0) {
         showNotification('No exercises to save', 'warning');
         return;
@@ -1060,24 +1345,79 @@ function saveWorkout() {
         notes: ''
     };
     
-    workoutLogs.workouts.push(workout);
-    workoutLogs.stats.total_workouts++;
-    
-    // Save as template
-    workoutLogs.templates.push({
-        name: workoutName,
-        equipment_sequence: currentWorkout.map(e => e.id),
-        target_duration: mySettings.user?.typical_duration || 60
-    });
-    
     try {
-        localStorage.setItem('eosFitnessLogs', JSON.stringify(workoutLogs));
-        showNotification('Workout saved successfully!', 'success');
+        // Save workout via API
+        showNotification('Saving workout...', 'info');
+        const response = await ApiClient.addWorkout(workout);
+        
+        if (response.error) {
+            // Fallback to local storage
+            console.warn('API save failed, using localStorage:', response.message);
+            workoutLogs.workouts.push(workout);
+            
+            // Add as template locally
+            const existingTemplate = workoutLogs.templates.find(t => t.name === workoutName);
+            if (!existingTemplate) {
+                workoutLogs.templates.push({
+                    name: workoutName,
+                    equipment_sequence: currentWorkout.map(e => e.id),
+                    target_duration: mySettings.user?.typical_duration || 60
+                });
+            }
+            
+            localStorage.setItem('eosFitnessLogs', JSON.stringify(workoutLogs));
+            showNotification('Workout saved locally - will sync when online', 'warning');
+        } else {
+            // Successfully saved to cloud
+            // Refresh data to get updated statistics
+            await loadWorkoutLogs();
+            showNotification('Workout saved to cloud!', 'success');
+        }
+        
+        // Clear current workout and refresh display
         currentWorkout = [];
         displayWorkoutBuilder();
+        
     } catch (error) {
-        console.error('Failed to save workout:', error);
-        showNotification('Failed to save workout', 'error');
+        console.error('Error saving workout:', error);
+        
+        // Fallback to localStorage
+        try {
+            workoutLogs.workouts.push(workout);
+            localStorage.setItem('eosFitnessLogs', JSON.stringify(workoutLogs));
+            showNotification('Workout saved locally due to error', 'warning');
+            currentWorkout = [];
+            displayWorkoutBuilder();
+        } catch (localError) {
+            console.error('Local save also failed:', localError);
+            showNotification('Failed to save workout', 'error');
+        }
+    }
+}
+
+// Enhanced settings save function
+async function saveSettingsToCloud() {
+    try {
+        const response = await ApiClient.saveSettings(mySettings);
+        
+        if (response.error) {
+            console.warn('Cloud save failed:', response.message);
+            // Keep using local batched save as fallback
+            saveSettingsToLocalBatched();
+            return false;
+        }
+        
+        // Also save locally for offline access
+        saveSettingsToLocalBatched();
+        
+        showNotification('Settings synced to cloud', 'success');
+        return true;
+        
+    } catch (error) {
+        console.error('Error saving settings to cloud:', error);
+        // Fallback to local save
+        saveSettingsToLocalBatched();
+        return false;
     }
 }
 

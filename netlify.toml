@@ -9,6 +9,13 @@
   # Ensure Node.js version compatibility if needed
   NODE_VERSION = "18.14.0"
 
+[functions]
+  # Directory where Functions are located
+  directory = "netlify/functions"
+  
+  # Set Node.js version for Functions
+  node_bundler = "esbuild"
+
 # Security headers for the application
 [[headers]]
   for = "/*"
@@ -25,8 +32,8 @@
     # Referrer policy for privacy
     Referrer-Policy = "strict-origin-when-cross-origin"
     
-    # Content Security Policy - restrictive but allowing necessary resources
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';"
+    # Content Security Policy - restrictive but allowing necessary resources and Functions
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://*.netlify.app; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';"
     
     # HTTPS Strict Transport Security (HSTS)
     Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
