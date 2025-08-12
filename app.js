@@ -41,16 +41,74 @@ function escapeHtml(text) {
 const ApiClient = {
     // User identification and management
     userId: null,
+    userToken: null,
     isOnline: navigator.onLine,
+    isAuthenticated: false,
     
-    // Initialize user ID from localStorage or generate new one
-    initUserId() {
+    // Initialize user authentication from localStorage
+    initAuth() {
+        this.userToken = localStorage.getItem('eos-auth-token');
         this.userId = localStorage.getItem('eos-user-id');
-        if (!this.userId) {
-            this.userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('eos-user-id', this.userId);
+        
+        if (this.userToken && this.isTokenValid()) {
+            this.isAuthenticated = true;
+            return true;
+        } else {
+            this.clearAuth();
+            return false;
         }
-        return this.userId;
+    },
+
+    // Check if current token is valid and not expired
+    isTokenValid() {
+        if (!this.userToken) return false;
+        
+        try {
+            const [payloadBase64] = this.userToken.split('.');
+            const payload = JSON.parse(atob(payloadBase64));
+            
+            // Check if token is expired (with 5 minute buffer)
+            const now = Date.now();
+            const expirationBuffer = 5 * 60 * 1000; // 5 minutes
+            
+            if (payload.exp && now > (payload.exp - expirationBuffer)) {
+                console.warn('Authentication token expired');
+                return false;
+            }
+            
+            // Update userId from token if different
+            if (payload.userId && payload.userId !== this.userId) {
+                this.userId = payload.userId;
+                localStorage.setItem('eos-user-id', this.userId);
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('Invalid token format:', error);
+            return false;
+        }
+    },
+
+    // Store authentication data
+    setAuth(userId, token) {
+        this.userId = userId;
+        this.userToken = token;
+        this.isAuthenticated = true;
+        
+        localStorage.setItem('eos-user-id', userId);
+        localStorage.setItem('eos-auth-token', token);
+        localStorage.setItem('eos-auth-date', new Date().toISOString());
+    },
+
+    // Clear authentication data
+    clearAuth() {
+        this.userId = null;
+        this.userToken = null;
+        this.isAuthenticated = false;
+        
+        localStorage.removeItem('eos-auth-token');
+        localStorage.removeItem('eos-user-id');
+        localStorage.removeItem('eos-auth-date');
     },
 
     // Network status tracking
@@ -58,16 +116,94 @@ const ApiClient = {
         this.isOnline = navigator.onLine;
     },
 
-    // Generic API call with error handling and fallbacks
+    // Register new user and get authentication token
+    async registerUser(userName) {
+        try {
+            const response = await fetch('/.netlify/functions/auth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'register',
+                    userName: userName
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Registration failed: HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success && data.user) {
+                this.setAuth(data.user.userId, data.user.token);
+                showNotification(`Welcome ${userName}! Account created successfully.`, 'success');
+                return { success: true, user: data.user };
+            } else {
+                throw new Error(data.message || 'Registration failed');
+            }
+        } catch (error) {
+            console.error('Registration error:', error);
+            showNotification(`Registration failed: ${error.message}`, 'error');
+            return { success: false, error: error.message };
+        }
+    },
+
+    // Login existing user (generate new token)
+    async loginUser(userId) {
+        try {
+            const response = await fetch('/.netlify/functions/auth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'login',
+                    userId: userId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Login failed: HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success && data.user) {
+                this.setAuth(data.user.userId, data.user.token);
+                showNotification('Successfully logged in!', 'success');
+                return { success: true, user: data.user };
+            } else {
+                throw new Error(data.message || 'Login failed');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            showNotification(`Login failed: ${error.message}`, 'error');
+            return { success: false, error: error.message };
+        }
+    },
+
+    // Generic API call with secure authentication
     async makeRequest(endpoint, options = {}) {
-        if (!this.userId) this.initUserId();
+        // Check authentication first
+        if (!this.isAuthenticated && !this.initAuth()) {
+            // For auth endpoint, allow unauthenticated requests
+            if (!endpoint.includes('auth')) {
+                throw new Error('Authentication required. Please log in or register.');
+            }
+        }
         
         const defaultOptions = {
             headers: {
-                'Content-Type': 'application/json',
-                'x-user-id': this.userId
+                'Content-Type': 'application/json'
             }
         };
+
+        // Add authentication header if we have a token
+        if (this.userToken && this.isAuthenticated) {
+            defaultOptions.headers['Authorization'] = `Bearer ${this.userToken}`;
+        }
 
         const requestOptions = {
             ...defaultOptions,
@@ -77,6 +213,19 @@ const ApiClient = {
 
         try {
             const response = await fetch(`/.netlify/functions/${endpoint}`, requestOptions);
+            
+            // Handle authentication errors
+            if (response.status === 401) {
+                console.warn('Authentication failed - token may be expired');
+                this.clearAuth();
+                
+                // Show authentication prompt
+                if (typeof showAuthenticationModal === 'function') {
+                    showAuthenticationModal();
+                }
+                
+                throw new Error('Authentication required. Please log in again.');
+            }
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -176,14 +325,241 @@ const ApiClient = {
     }
 };
 
+// Authentication UI Management
+function showAuthenticationModal() {
+    document.getElementById('auth-modal').style.display = 'flex';
+    document.getElementById('auth-register').style.display = 'block';
+    document.getElementById('auth-login').style.display = 'none';
+    document.getElementById('auth-loading').style.display = 'none';
+}
+
+function hideAuthenticationModal() {
+    document.getElementById('auth-modal').style.display = 'none';
+}
+
+function switchToLogin() {
+    document.getElementById('auth-register').style.display = 'none';
+    document.getElementById('auth-login').style.display = 'block';
+    document.getElementById('auth-title').textContent = 'Login to Your Account';
+}
+
+function switchToRegister() {
+    document.getElementById('auth-register').style.display = 'block';
+    document.getElementById('auth-login').style.display = 'none';
+    document.getElementById('auth-title').textContent = 'Welcome to EOS Fitness Tracker';
+}
+
+function showAuthLoading() {
+    document.getElementById('auth-register').style.display = 'none';
+    document.getElementById('auth-login').style.display = 'none';
+    document.getElementById('auth-loading').style.display = 'block';
+}
+
+// Migration UI Management
+function showMigrationModal() {
+    document.getElementById('migration-modal').style.display = 'flex';
+    document.getElementById('migration-intro').style.display = 'block';
+    document.getElementById('migration-progress').style.display = 'none';
+    document.getElementById('migration-complete').style.display = 'none';
+}
+
+function hideMigrationModal() {
+    document.getElementById('migration-modal').style.display = 'none';
+}
+
+function showMigrationProgress() {
+    document.getElementById('migration-intro').style.display = 'none';
+    document.getElementById('migration-progress').style.display = 'block';
+}
+
+function showMigrationComplete(summary) {
+    document.getElementById('migration-progress').style.display = 'none';
+    document.getElementById('migration-complete').style.display = 'block';
+    
+    const summaryEl = document.getElementById('migration-summary');
+    summaryEl.innerHTML = `
+        <div class="summary-item">
+            <strong>Settings:</strong> ${summary.settingsMigrated ? 'Migrated' : 'Skipped'} 
+            ${summary.equipmentCount ? `(${summary.equipmentCount} equipment settings)` : ''}
+        </div>
+        <div class="summary-item">
+            <strong>Workout Logs:</strong> ${summary.workoutLogsMigrated ? 'Migrated' : 'Skipped'}
+            ${summary.totalWorkouts ? `(${summary.totalWorkouts} workouts)` : ''}
+        </div>
+    `;
+}
+
+// Update user status in header
+function updateUserStatus() {
+    const userNameEl = document.getElementById('user-name');
+    const authBtnEl = document.getElementById('auth-btn');
+    const syncStatusEl = document.getElementById('sync-status');
+    const syncIndicator = syncStatusEl.querySelector('.sync-indicator');
+    const syncText = syncStatusEl.querySelector('.sync-text');
+    
+    if (ApiClient.isAuthenticated) {
+        // Show user name if we have settings
+        if (mySettings.user?.name) {
+            userNameEl.textContent = mySettings.user.name;
+            userNameEl.style.display = 'inline';
+        }
+        
+        // Update auth button to logout
+        authBtnEl.textContent = 'Logout';
+        authBtnEl.onclick = () => {
+            ApiClient.clearAuth();
+            showNotification('Logged out successfully', 'info');
+            updateUserStatus();
+            showAuthenticationModal();
+        };
+        
+        // Update sync status
+        if (ApiClient.isOnline) {
+            syncIndicator.className = 'sync-indicator online';
+            syncText.textContent = 'Synced';
+        } else {
+            syncIndicator.className = 'sync-indicator offline';
+            syncText.textContent = 'Offline';
+        }
+    } else {
+        // Hide user name
+        userNameEl.style.display = 'none';
+        
+        // Update auth button to login
+        authBtnEl.textContent = 'Login';
+        authBtnEl.onclick = showAuthenticationModal;
+        
+        // Update sync status to offline
+        syncIndicator.className = 'sync-indicator offline';
+        syncText.textContent = 'Not logged in';
+    }
+}
+
+// Authentication form handlers
+async function handleRegistration(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const userName = formData.get('userName');
+    
+    if (!userName || userName.trim().length < 2) {
+        showNotification('Please enter a valid name (at least 2 characters)', 'error');
+        return;
+    }
+    
+    showAuthLoading();
+    
+    const result = await ApiClient.registerUser(userName.trim());
+    
+    if (result.success) {
+        hideAuthenticationModal();
+        updateUserStatus();
+        await loadAllData(); // Reload data with authentication
+    } else {
+        // Show error and return to registration form
+        switchToRegister();
+        showNotification(`Registration failed: ${result.error}`, 'error');
+    }
+}
+
+async function handleLogin(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const userId = formData.get('userId');
+    
+    if (!userId || !userId.startsWith('user-')) {
+        showNotification('Please enter a valid User ID', 'error');
+        return;
+    }
+    
+    showAuthLoading();
+    
+    const result = await ApiClient.loginUser(userId.trim());
+    
+    if (result.success) {
+        hideAuthenticationModal();
+        updateUserStatus();
+        await loadAllData(); // Reload data with authentication
+    } else {
+        // Show error and return to login form
+        switchToLogin();
+        showNotification(`Login failed: ${result.error}`, 'error');
+    }
+}
+
+// Migration handlers
+async function startMigration() {
+    showMigrationProgress();
+    
+    const statusEl = document.getElementById('migration-status');
+    const progressEl = document.getElementById('migration-progress-fill');
+    
+    try {
+        // Get local data
+        statusEl.textContent = 'Reading local data...';
+        progressEl.style.width = '25%';
+        
+        const localSettings = JSON.parse(localStorage.getItem('eosFitnessSettings') || 'null');
+        const localWorkoutLogs = JSON.parse(localStorage.getItem('eosFitnessLogs') || 'null');
+        
+        // Migrate data
+        statusEl.textContent = 'Uploading to cloud...';
+        progressEl.style.width = '50%';
+        
+        const result = await ApiClient.migrateData(localSettings, localWorkoutLogs);
+        
+        if (result.error) {
+            throw new Error(result.message);
+        }
+        
+        statusEl.textContent = 'Finalizing migration...';
+        progressEl.style.width = '75%';
+        
+        // Mark migration as complete
+        ApiClient.markMigrationComplete();
+        
+        statusEl.textContent = 'Migration complete!';
+        progressEl.style.width = '100%';
+        
+        // Show success
+        setTimeout(() => {
+            showMigrationComplete(result.migration || {});
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Migration failed:', error);
+        statusEl.textContent = `Migration failed: ${error.message}`;
+        showNotification(`Migration failed: ${error.message}`, 'error');
+        
+        setTimeout(() => {
+            hideMigrationModal();
+        }, 3000);
+    }
+}
+
+function skipMigration() {
+    ApiClient.markMigrationComplete();
+    hideMigrationModal();
+    showNotification('Migration skipped. You can export your data anytime from Settings.', 'info');
+}
+
+function continueToApp() {
+    hideMigrationModal();
+    updateUserStatus();
+    loadAllData(); // Reload with fresh cloud data
+}
+
 // Listen for online/offline events
 window.addEventListener('online', () => {
     ApiClient.updateNetworkStatus();
+    updateUserStatus();
     showNotification('Back online - data will sync', 'success');
 });
 
 window.addEventListener('offline', () => {
     ApiClient.updateNetworkStatus();
+    updateUserStatus();
     showNotification('Offline mode - changes saved locally', 'warning');
 });
 
@@ -206,7 +582,46 @@ function saveSettingsToLocalBatched() {
 // Initialize application
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Initializing EOS Fitness Tracker (Secure Version)...');
-    await loadAllData();
+    
+    // Initialize authentication
+    const isAuthenticated = ApiClient.initAuth();
+    console.log('Authentication status:', isAuthenticated ? 'Authenticated' : 'Not authenticated');
+    
+    // Set up authentication form listeners
+    document.getElementById('register-form').addEventListener('submit', handleRegistration);
+    document.getElementById('login-form').addEventListener('submit', handleLogin);
+    
+    // Set up migration form listeners
+    document.getElementById('start-migration').addEventListener('click', startMigration);
+    document.getElementById('skip-migration').addEventListener('click', skipMigration);
+    document.getElementById('continue-to-app').addEventListener('click', continueToApp);
+    
+    // Load equipment database first (doesn't require auth)
+    await loadEquipmentDatabase();
+    
+    // Check authentication and migration status
+    if (!isAuthenticated) {
+        // Check if user needs migration
+        if (ApiClient.shouldMigrate()) {
+            console.log('Migration needed - showing migration modal');
+            showMigrationModal();
+        } else {
+            console.log('New user - showing authentication modal');
+            showAuthenticationModal();
+        }
+        
+        // Load default/offline data
+        loadMySettingsOffline();
+        loadWorkoutLogsOffline();
+    } else {
+        console.log('User authenticated - loading cloud data');
+        // Load cloud data
+        await loadMySettings();
+        await loadWorkoutLogs();
+    }
+    
+    // Update UI regardless of auth status
+    updateUserStatus();
     setupEventListeners();
     displayEquipment();
     updateUI();
@@ -354,6 +769,43 @@ async function loadWorkoutLogs() {
         
         workoutLogs = getDefaultWorkoutLogs();
     }
+}
+
+// Offline Data Loading Functions (for non-authenticated users)
+function loadMySettingsOffline() {
+    try {
+        const localSettings = localStorage.getItem('eosFitnessSettings');
+        if (localSettings) {
+            const parsed = JSON.parse(localSettings);
+            if (validateSettings(parsed)) {
+                mySettings = parsed;
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading offline settings:', error);
+    }
+    
+    // Fallback to default settings
+    mySettings = getDefaultSettings();
+}
+
+function loadWorkoutLogsOffline() {
+    try {
+        const localLogs = localStorage.getItem('eosFitnessLogs');
+        if (localLogs) {
+            const parsed = JSON.parse(localLogs);
+            if (validateWorkoutLogs(parsed)) {
+                workoutLogs = parsed;
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading offline workout logs:', error);
+    }
+    
+    // Fallback to default logs
+    workoutLogs = getDefaultWorkoutLogs();
 }
 
 // Data Migration Function

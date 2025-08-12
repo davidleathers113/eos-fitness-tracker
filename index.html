@@ -15,6 +15,14 @@
             <h1>💪 EOS Fitness Tracker</h1>
             <div class="header-info">
                 <span class="gym-location">EOS Fitness Lutz, FL</span>
+                <div class="user-status">
+                    <span id="user-name" class="user-name" style="display: none;"></span>
+                    <button id="auth-btn" class="auth-btn">Login</button>
+                    <span id="sync-status" class="sync-status">
+                        <span class="sync-indicator offline">●</span>
+                        <span class="sync-text">Offline</span>
+                    </span>
+                </div>
                 <span id="last-updated" class="last-updated">Loading...</span>
             </div>
         </div>
@@ -136,6 +144,99 @@
     <div id="substitutes-modal" class="modal">
         <div class="modal-content">
             <!-- Modal content will be inserted by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div id="auth-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content auth-modal">
+            <div class="modal-header">
+                <h2 id="auth-title">Welcome to EOS Fitness Tracker</h2>
+                <button class="modal-close" onclick="hideAuthenticationModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="auth-register" class="auth-form">
+                    <h3>Create Your Account</h3>
+                    <p>Get started with secure cloud storage for your workout data.</p>
+                    <form id="register-form">
+                        <div class="form-group">
+                            <label for="user-name-input">Your Name:</label>
+                            <input type="text" id="user-name-input" name="userName" placeholder="Enter your name" required>
+                        </div>
+                        <button type="submit" class="btn-primary">Create Account</button>
+                    </form>
+                    <p class="auth-switch">
+                        Already have an account? <a href="#" onclick="switchToLogin()">Login instead</a>
+                    </p>
+                </div>
+                
+                <div id="auth-login" class="auth-form" style="display: none;">
+                    <h3>Login to Your Account</h3>
+                    <p>Enter your User ID to access your workout data.</p>
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="user-id-input">User ID:</label>
+                            <input type="text" id="user-id-input" name="userId" placeholder="user-1234567890-abc123" required>
+                            <small class="form-help">Your User ID starts with "user-" followed by numbers and letters</small>
+                        </div>
+                        <button type="submit" class="btn-primary">Login</button>
+                    </form>
+                    <p class="auth-switch">
+                        Don't have an account? <a href="#" onclick="switchToRegister()">Create one</a>
+                    </p>
+                </div>
+                
+                <div id="auth-loading" class="auth-loading" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>Setting up your account...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Migration Modal -->
+    <div id="migration-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content migration-modal">
+            <div class="modal-header">
+                <h2>Upgrade to Cloud Storage</h2>
+            </div>
+            <div class="modal-body">
+                <div id="migration-intro" class="migration-step">
+                    <h3>🚀 Welcome to the new secure version!</h3>
+                    <p>We found your existing workout data. Let's migrate it to secure cloud storage so you can access it from any device.</p>
+                    <div class="migration-benefits">
+                        <div class="benefit-item">
+                            <span class="benefit-icon">🔐</span>
+                            <span>Secure encrypted storage</span>
+                        </div>
+                        <div class="benefit-item">
+                            <span class="benefit-icon">📱</span>
+                            <span>Cross-device synchronization</span>
+                        </div>
+                        <div class="benefit-item">
+                            <span class="benefit-icon">☁️</span>
+                            <span>Automatic cloud backup</span>
+                        </div>
+                    </div>
+                    <button id="start-migration" class="btn-primary">Start Migration</button>
+                    <button id="skip-migration" class="btn-secondary">Continue Without Migration</button>
+                </div>
+                
+                <div id="migration-progress" class="migration-step" style="display: none;">
+                    <h3>Migrating Your Data...</h3>
+                    <div class="progress-bar">
+                        <div id="migration-progress-fill" class="progress-fill"></div>
+                    </div>
+                    <p id="migration-status">Preparing migration...</p>
+                </div>
+                
+                <div id="migration-complete" class="migration-step" style="display: none;">
+                    <h3>✅ Migration Complete!</h3>
+                    <p>Your workout data has been successfully moved to secure cloud storage.</p>
+                    <div id="migration-summary" class="migration-summary"></div>
+                    <button id="continue-to-app" class="btn-primary">Continue to App</button>
+                </div>
+            </div>
         </div>
     </div>
 
