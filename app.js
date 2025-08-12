@@ -73,7 +73,7 @@ async function loadAllData() {
 
 async function loadEquipmentDatabase() {
     try {
-        const response = await fetch('../database/equipment-database.json');
+        const response = await fetch('database/equipment-database.json');
         if (response.ok) {
             const data = await response.json();
             // Validate equipment data structure
@@ -105,7 +105,7 @@ async function loadMySettings() {
         }
         
         // Then try loading from file
-        const response = await fetch('../database/my-settings.json');
+        const response = await fetch('database/my-settings.json');
         if (response.ok) {
             const fileSettings = await response.json();
             if (validateSettings(fileSettings)) {
@@ -130,7 +130,7 @@ async function loadWorkoutLogs() {
             }
         }
         
-        const response = await fetch('../database/workout-logs.json');
+        const response = await fetch('database/workout-logs.json');
         if (response.ok) {
             const fileLogs = await response.json();
             if (validateWorkoutLogs(fileLogs)) {

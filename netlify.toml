@@ -1,0 +1,52 @@
+[build]
+  # Publish directory containing the static files (root to include database folder)
+  publish = "."
+  
+  # No build command needed for pure static site
+  command = ""
+
+[build.environment]
+  # Ensure Node.js version compatibility if needed
+  NODE_VERSION = "18.14.0"
+
+# Security headers for the application
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Prevent clickjacking attacks
+    X-Frame-Options = "DENY"
+    
+    # XSS protection (complementing the app's security measures)
+    X-XSS-Protection = "1; mode=block"
+    
+    # Prevent MIME type sniffing
+    X-Content-Type-Options = "nosniff"
+    
+    # Referrer policy for privacy
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    
+    # Content Security Policy - restrictive but allowing necessary resources
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';"
+    
+    # HTTPS Strict Transport Security (HSTS)
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+
+# Cache optimization for static assets
+[[headers]]
+  for = "*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "*.json"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+    Content-Type = "application/json; charset=utf-8"
+
+# Force HTTPS redirect (will be handled by Netlify automatically)
+# No SPA redirects needed - this is a single page application
