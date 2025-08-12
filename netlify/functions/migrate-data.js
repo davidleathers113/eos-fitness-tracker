@@ -1,4 +1,6 @@
 const { getStore, connectLambda } = require("@netlify/blobs");
+const { createLogger, formatErrorResponse, formatSuccessResponse } = require("./_shared/logger");
+const { authenticateUser, checkRateLimit, getClientIp } = require("./_shared/auth");
 
 // Validation functions (matching frontend)
 function validateSettings(settings) {
@@ -135,15 +137,23 @@ function updateStatistics(logs) {
 exports.handler = async (event, context) => {
   // Initialize Netlify Blobs in Lambda compatibility (Functions API v1)
   connectLambda(event);
+  
+  // Create structured logger for this request
+  const logger = createLogger('migrate-data', event, context);
+  logger.info('Migration function invoked', { method: event.httpMethod });
+  
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Origin': process.env.CORS_ORIGIN || 'https://eos-fitness-tracker.netlify.app',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-user-token',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store, max-age=0',
+    'Vary': 'Origin'
   };
 
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
+    logger.info('CORS preflight request handled');
     return {
       statusCode: 200,
       headers,
@@ -152,27 +162,138 @@ exports.handler = async (event, context) => {
   }
 
   if (event.httpMethod !== 'POST') {
+    logger.warn('Method not allowed', { method: event.httpMethod });
+    const errorResponse = formatErrorResponse(logger, 
+      new Error(`Method ${event.httpMethod} not allowed`), 
+      'Method not allowed. Use POST to migrate data.');
     return {
       statusCode: 405,
       headers,
-      body: JSON.stringify({ error: 'Method not allowed. Use POST to migrate data.' })
+      body: JSON.stringify(errorResponse)
+    };
+  }
+
+  // Validate Content-Type
+  const contentType = event.headers['content-type'] || event.headers['Content-Type'];
+  if (!contentType || !contentType.includes('application/json')) {
+    logger.warn('Invalid content type for migration', { contentType });
+    const errorResponse = formatErrorResponse(logger, 
+      new Error('Invalid content type'), 
+      'Content-Type must be application/json');
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify(errorResponse)
+    };
+  }
+
+  // Check request body size (migrations can be large but need limits)
+  const bodySize = Buffer.byteLength(event.body || '', 'utf8');
+  const maxSize = 10 * 1024 * 1024; // 10MB limit for migration data
+  if (bodySize > maxSize) {
+    logger.warn('Migration payload too large', { 
+      bodySize, 
+      maxSize,
+      sizeMB: (bodySize / 1024 / 1024).toFixed(2)
+    });
+    const errorResponse = formatErrorResponse(logger, 
+      new Error('Payload too large'), 
+      `Migration data exceeds ${maxSize / 1024 / 1024}MB limit`);
+    return {
+      statusCode: 413,
+      headers,
+      body: JSON.stringify(errorResponse)
     };
   }
 
   try {
-    if (!event.body) {
+    // Rate limiting check (migration is heavy - only 3 per hour)
+    const clientIp = getClientIp(event);
+    const rateLimit = checkRateLimit(clientIp, 3600000, 3); // 3 migrations per hour
+    
+    if (!rateLimit.allowed) {
+      logger.warn('Rate limit exceeded for migration', { 
+        ip: clientIp,
+        resetTime: new Date(rateLimit.resetTime).toISOString()
+      });
+      const errorResponse = formatErrorResponse(logger, 
+        new Error('Rate limit exceeded'), 
+        'Too many migration requests. Migrations are limited to 3 per hour.');
       return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Request body required with localStorage data' })
+        statusCode: 429,
+        headers: {
+          ...headers,
+          'Retry-After': Math.ceil((rateLimit.resetTime - Date.now()) / 1000).toString()
+        },
+        body: JSON.stringify(errorResponse)
       };
     }
 
-    const requestBody = JSON.parse(event.body);
+    // Authenticate user (CRITICAL - was missing!)
+    const auth = authenticateUser(event, logger);
+    if (!auth.authenticated) {
+      logger.warn('Unauthorized migration attempt', { 
+        ip: clientIp,
+        error: auth.error 
+      });
+      const errorResponse = formatErrorResponse(logger, 
+        new Error('Authentication failed'), 
+        auth.error || 'Authentication required for data migration');
+      return {
+        statusCode: 401,
+        headers,
+        body: JSON.stringify(errorResponse)
+      };
+    }
+
+    const userId = auth.userId;
+    logger.userAction('migration-start', userId, { 
+      isLegacy: auth.isLegacy,
+      remainingRequests: rateLimit.remaining,
+      bodySizeMB: (bodySize / 1024 / 1024).toFixed(2)
+    });
+
+    if (!event.body) {
+      logger.warn('Missing request body for migration', { userId });
+      const errorResponse = formatErrorResponse(logger, 
+        new Error('Request body required'), 
+        'Request body required with localStorage data');
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify(errorResponse)
+      };
+    }
+
+    let requestBody;
+    try {
+      requestBody = JSON.parse(event.body);
+    } catch (parseError) {
+      logger.warn('Invalid JSON in migration request', { userId, error: parseError.message });
+      const errorResponse = formatErrorResponse(logger, parseError, 'Invalid JSON in request body');
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify(errorResponse)
+      };
+    }
+
     const { localSettings, localWorkoutLogs, requestedUserId } = requestBody;
 
-    // Generate user ID (use requested if valid, otherwise generate new)
-    const userId = requestedUserId || generateUserId();
+    // Security: Use authenticated user ID, don't allow arbitrary IDs from request
+    // (requestedUserId is ignored for security - user can only migrate their own data)
+    if (requestedUserId && requestedUserId !== userId) {
+      logger.warn('Attempted to migrate data for different user', { 
+        authenticatedUserId: userId,
+        requestedUserId: requestedUserId
+      });
+    }
+    
+    logger.info('Starting migration for authenticated user', { 
+      userId,
+      hasSettings: !!localSettings,
+      hasWorkoutLogs: !!localWorkoutLogs
+    });
 
     // Get stores
     const settingsStore = getStore("user-settings");
@@ -258,37 +379,52 @@ exports.handler = async (event, context) => {
       }
     };
 
+    logger.userAction('migration-completed', userId, {
+      settingsMigrated: !!migrationSummary.settings.migrated,
+      workoutLogsMigrated: !!migrationSummary.workoutLogs.migrated,
+      totalWorkouts: migrationSummary.workoutLogs.totalWorkouts,
+      equipmentCount: migrationSummary.settings.equipmentCount
+    });
+
+    const response = formatSuccessResponse({
+      message: 'Data migration completed successfully',
+      userId: userId,
+      migration: migrationSummary,
+      results: {
+        settings: settingsResult ? {
+          modified: settingsResult.modified,
+          etag: settingsResult.etag
+        } : null,
+        logs: logsResult ? {
+          modified: logsResult.modified,
+          etag: logsResult.etag
+        } : null
+      }
+    }, logger);
+
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({
-        success: true,
-        message: 'Data migration completed successfully',
-        userId: userId,
-        migration: migrationSummary,
-        results: {
-          settings: settingsResult ? {
-            modified: settingsResult.modified,
-            etag: settingsResult.etag
-          } : null,
-          logs: logsResult ? {
-            modified: logsResult.modified,
-            etag: logsResult.etag
-          } : null
-        }
-      })
+      body: JSON.stringify(response)
     };
 
   } catch (error) {
-    console.error('Error in migrate-data function:', error);
-    
+    // Try to get userId for logging, but don't fail if auth fails
+    let logUserId = 'unknown';
+    try {
+      const auth = authenticateUser(event, logger);
+      if (auth.authenticated) logUserId = auth.userId;
+    } catch (authError) {
+      // Ignore auth errors in error handler
+    }
+
+    logger.error('Unexpected error in migrate-data function', error, { userId: logUserId });
+
+    const errorResponse = formatErrorResponse(logger, error, 'An unexpected error occurred during migration');
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ 
-        error: 'Internal server error during migration',
-        message: error.message 
-      })
+      body: JSON.stringify(errorResponse)
     };
   }
 };

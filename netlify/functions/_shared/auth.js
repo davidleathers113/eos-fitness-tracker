@@ -5,8 +5,17 @@
 
 const crypto = require('crypto');
 
-// Get HMAC secret from environment or generate a default (should be set in production)
-const HMAC_SECRET = process.env.USER_TOKEN_SECRET || 'default-secret-change-in-production';
+// Get HMAC secret from environment - REQUIRED in production
+const HMAC_SECRET = process.env.USER_TOKEN_SECRET;
+
+// Fail fast if using default secret in production
+if (!HMAC_SECRET) {
+  throw new Error('USER_TOKEN_SECRET environment variable is required for secure authentication');
+}
+
+if (HMAC_SECRET === 'default-secret-change-in-production') {
+  throw new Error('USER_TOKEN_SECRET must be changed from default value in production');
+}
 
 /**
  * Generate a secure user token with HMAC signature
@@ -60,7 +69,8 @@ function verifyUserToken(token) {
       .update(Buffer.from(payloadBase64, 'base64').toString('utf8'))
       .digest('hex');
 
-    if (signature !== expectedSignature) {
+    // Use timing-safe comparison to prevent timing attacks
+    if (!crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expectedSignature, 'hex'))) {
       return { valid: false, error: 'Invalid token signature' };
     }
 
@@ -153,8 +163,37 @@ function createNewUser() {
 }
 
 /**
+ * Parse and normalize client IP address from request headers
+ * @param {Object} event - Netlify event object
+ * @returns {string} Normalized IP address
+ */
+function getClientIp(event) {
+  // x-forwarded-for can contain multiple IPs: "client, proxy1, proxy2"
+  // First IP is the original client
+  const forwardedFor = event.headers['x-forwarded-for'];
+  if (forwardedFor) {
+    const firstIp = forwardedFor.split(',')[0].trim();
+    if (firstIp) return firstIp;
+  }
+  
+  // Fallback to other IP headers
+  return event.headers['x-nf-client-connection-ip'] || 
+         event.headers['x-real-ip'] || 
+         'unknown';
+}
+
+/**
  * Rate limiting check (simple in-memory implementation)
- * In production, this should use Redis or similar persistent store
+ * 
+ * WARNING: This in-memory rate limiter has limitations:
+ * - Per-instance only (not effective across serverless function instances)
+ * - Lost on cold starts/restarts
+ * - No persistence across deployments
+ * 
+ * For production at scale, replace with:
+ * - Redis with TTL keys
+ * - Netlify Blobs with ETag-based atomic updates
+ * - External rate limiting service (e.g., Upstash, Cloudflare)
  */
 const rateLimitStore = new Map();
 
@@ -185,5 +224,6 @@ module.exports = {
   verifyUserToken,
   authenticateUser,
   createNewUser,
-  checkRateLimit
+  checkRateLimit,
+  getClientIp
 };
