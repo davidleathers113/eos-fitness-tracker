@@ -302,11 +302,25 @@ exports.handler = async (event, context) => {
     const settingsKey = `settings-${userId}`;
     const logsKey = `logs-${userId}`;
 
-    // Check if cloud data already exists
-    const [existingSettings, existingLogs] = await Promise.all([
-      settingsStore.get(settingsKey, { type: 'json' }),
-      logsStore.get(logsKey, { type: 'json' })
+    // Check if cloud data already exists (with ETags for concurrency control)
+    const [existingSettingsResult, existingLogsResult] = await Promise.all([
+      settingsStore.getWithMetadata(settingsKey, { type: 'json' }),
+      logsStore.getWithMetadata(logsKey, { type: 'json' })
     ]);
+
+    // Extract data and ETags
+    const existingSettings = existingSettingsResult?.data || null;
+    const existingLogs = existingLogsResult?.data || null;
+    const settingsETag = existingSettingsResult?.etag || null;
+    const logsETag = existingLogsResult?.etag || null;
+
+    logger.info('Existing cloud data check', { 
+      userId,
+      hasExistingSettings: !!existingSettings,
+      hasExistingLogs: !!existingLogs,
+      settingsETag,
+      logsETag
+    });
 
     let migratedSettings = null;
     let migratedLogs = null;
@@ -326,15 +340,53 @@ exports.handler = async (event, context) => {
       // Merge with existing cloud data
       migratedSettings = mergeSettings(existingSettings, localSettings);
 
-      // Save settings
+      // Save settings with ETag-based optimistic locking
       const settingsMetadata = {
         lastUpdated: new Date().toISOString(),
         version: '2.0',
         source: 'migration-from-localStorage',
-        migrationTimestamp: new Date().toISOString()
+        migrationTimestamp: new Date().toISOString(),
+        correlationId: logger.correlationId
       };
 
-      settingsResult = await settingsStore.setJSON(settingsKey, migratedSettings, { metadata: settingsMetadata });
+      const settingsSaveOptions = { metadata: settingsMetadata };
+      if (settingsETag) {
+        settingsSaveOptions.onlyIfMatch = settingsETag;
+        logger.info('Using ETag for settings migration', { userId, settingsETag });
+      }
+
+      try {
+        settingsResult = await settingsStore.setJSON(settingsKey, migratedSettings, settingsSaveOptions);
+        
+        // Check if write was successful with ETag
+        if (settingsETag && !settingsResult.modified) {
+          logger.warn('Settings migration conflict - concurrent modification detected', { 
+            userId, 
+            settingsETag,
+            modified: settingsResult.modified
+          });
+          
+          const conflictResponse = formatErrorResponse(logger, 
+            new Error('Migration conflict'), 
+            'Settings were modified during migration. Please try again.');
+          
+          return {
+            statusCode: 409, // Conflict
+            headers,
+            body: JSON.stringify(conflictResponse)
+          };
+        }
+        
+        logger.info('Settings migrated successfully', { 
+          userId,
+          modified: settingsResult.modified,
+          etag: settingsResult.etag
+        });
+        
+      } catch (settingsError) {
+        logger.error('Error migrating settings', settingsError, { userId, settingsETag });
+        throw settingsError;
+      }
     }
 
     // Migrate workout logs if provided
@@ -351,15 +403,54 @@ exports.handler = async (event, context) => {
       let mergedLogs = mergeWorkoutLogs(existingLogs, localWorkoutLogs);
       migratedLogs = updateStatistics(mergedLogs);
 
-      // Save logs
+      // Save logs with ETag-based optimistic locking
       const logsMetadata = {
         lastUpdated: new Date().toISOString(),
         version: '2.0',
         source: 'migration-from-localStorage',
-        migrationTimestamp: new Date().toISOString()
+        migrationTimestamp: new Date().toISOString(),
+        correlationId: logger.correlationId
       };
 
-      logsResult = await logsStore.setJSON(logsKey, migratedLogs, { metadata: logsMetadata });
+      const logsSaveOptions = { metadata: logsMetadata };
+      if (logsETag) {
+        logsSaveOptions.onlyIfMatch = logsETag;
+        logger.info('Using ETag for logs migration', { userId, logsETag });
+      }
+
+      try {
+        logsResult = await logsStore.setJSON(logsKey, migratedLogs, logsSaveOptions);
+        
+        // Check if write was successful with ETag
+        if (logsETag && !logsResult.modified) {
+          logger.warn('Logs migration conflict - concurrent modification detected', { 
+            userId, 
+            logsETag,
+            modified: logsResult.modified
+          });
+          
+          const conflictResponse = formatErrorResponse(logger, 
+            new Error('Migration conflict'), 
+            'Workout logs were modified during migration. Please try again.');
+          
+          return {
+            statusCode: 409, // Conflict
+            headers,
+            body: JSON.stringify(conflictResponse)
+          };
+        }
+        
+        logger.info('Workout logs migrated successfully', { 
+          userId,
+          totalWorkouts: migratedLogs.workouts?.length || 0,
+          modified: logsResult.modified,
+          etag: logsResult.etag
+        });
+        
+      } catch (logsError) {
+        logger.error('Error migrating workout logs', logsError, { userId, logsETag });
+        throw logsError;
+      }
     }
 
     // Prepare migration summary

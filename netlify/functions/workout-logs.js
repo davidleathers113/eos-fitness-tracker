@@ -216,17 +216,18 @@ exports.handler = async (event, context) => {
     if (event.httpMethod === 'GET') {
       logger.dataOperation('read', 'workout-logs', logsKey, userId);
       
-      // Retrieve workout logs
-      const logs = await userStore.get(logsKey, { type: 'json' });
+      // Retrieve workout logs with metadata (including ETag)
+      const result = await userStore.getWithMetadata(logsKey, { type: 'json' });
       
-      if (logs === null) {
+      if (result === null) {
         logger.info('New user - returning default workout logs', { userId });
-        // Return default logs for new users
+        // Return default logs for new users (no ETag since not stored yet)
         const defaultLogs = getDefaultWorkoutLogs();
         const response = formatSuccessResponse({
           logs: defaultLogs,
           userId: userId,
-          isNewUser: true
+          isNewUser: true,
+          etag: null
         }, logger);
         
         return {
@@ -237,18 +238,21 @@ exports.handler = async (event, context) => {
       }
 
       // Update statistics before returning
-      const updatedLogs = updateStatistics(logs);
+      const updatedLogs = updateStatistics(result.data);
       
       logger.info('Existing workout logs retrieved', { 
         userId, 
         totalWorkouts: updatedLogs.workouts?.length || 0,
-        totalTemplates: updatedLogs.templates?.length || 0
+        totalTemplates: updatedLogs.templates?.length || 0,
+        etag: result.etag
       });
 
       const response = formatSuccessResponse({
         logs: updatedLogs,
         userId: userId,
-        isNewUser: false
+        isNewUser: false,
+        etag: result.etag,
+        lastModified: result.lastModified
       }, logger);
 
       return {
@@ -288,7 +292,7 @@ exports.handler = async (event, context) => {
       
       if (requestBody.workout) {
         // Adding a single new workout
-        const { workout } = requestBody;
+        const { workout, ifMatch } = requestBody;
         
         logger.info('Adding new workout', { 
           userId, 
@@ -308,17 +312,36 @@ exports.handler = async (event, context) => {
           };
         }
 
-        // Get existing logs or default
-        let logs = await userStore.get(logsKey, { type: 'json' });
-        if (!logs) {
-          logs = getDefaultWorkoutLogs();
+        // Get existing logs with ETag for concurrency control
+        const logsResult = await userStore.getWithMetadata(logsKey, { type: 'json' });
+        let logs = logsResult?.data || getDefaultWorkoutLogs();
+        const currentETag = logsResult?.etag;
+
+        // If client provided ETag, verify it matches current data
+        if (ifMatch && currentETag !== ifMatch) {
+          logger.warn('ETag mismatch for workout addition', { 
+            userId, 
+            workoutId: workout?.id,
+            providedETag: ifMatch,
+            currentETag
+          });
+          
+          const conflictResponse = formatErrorResponse(logger, 
+            new Error('ETag mismatch'), 
+            'Conflict: Workout logs were modified by another client. Please refresh and try again.');
+          
+          return {
+            statusCode: 409, // Conflict
+            headers,
+            body: JSON.stringify(conflictResponse)
+          };
         }
 
         // Add new workout
         logs.workouts.push(workout);
         logs = updateStatistics(logs);
 
-        // Save back to Blobs
+        // Save back to Blobs with ETag-based optimistic locking
         const metadata = {
           lastUpdated: new Date().toISOString(),
           version: '2.0',
@@ -326,7 +349,32 @@ exports.handler = async (event, context) => {
           correlationId: logger.correlationId
         };
 
-        const result = await userStore.setJSON(logsKey, logs, { metadata });
+        const saveOptions = { metadata };
+        if (currentETag) {
+          saveOptions.onlyIfMatch = currentETag;
+        }
+
+        const result = await userStore.setJSON(logsKey, logs, saveOptions);
+        
+        // Check if write was successful with ETag
+        if (currentETag && !result.modified) {
+          logger.warn('Workout addition failed due to concurrent modification', { 
+            userId, 
+            workoutId: workout?.id,
+            currentETag,
+            modified: result.modified
+          });
+          
+          const conflictResponse = formatErrorResponse(logger, 
+            new Error('Concurrent modification'), 
+            'Conflict: Workout logs were modified during save. Please refresh and try again.');
+          
+          return {
+            statusCode: 409, // Conflict
+            headers,
+            body: JSON.stringify(conflictResponse)
+          };
+        }
         
         logger.info('Workout added successfully', { 
           userId, 

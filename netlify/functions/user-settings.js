@@ -103,17 +103,18 @@ exports.handler = async(event, context) => {
         if (event.httpMethod === 'GET') {
             logger.dataOperation('read', 'user-settings', settingsKey, userId);
             
-            // Retrieve user settings
-            const settings = await userStore.get(settingsKey, { type: 'json' });
+            // Retrieve user settings with metadata (including ETag)
+            const result = await userStore.getWithMetadata(settingsKey, { type: 'json' });
 
-            if (settings === null) {
+            if (result === null) {
                 logger.info('New user - returning default settings', { userId });
-                // Return default settings for new users
+                // Return default settings for new users (no ETag since not stored yet)
                 const defaultSettings = getDefaultSettings();
                 const response = formatSuccessResponse({
                     settings: defaultSettings,
                     userId: userId,
-                    isNewUser: true
+                    isNewUser: true,
+                    etag: null
                 }, logger);
                 
                 return {
@@ -123,11 +124,18 @@ exports.handler = async(event, context) => {
                 };
             }
 
-            logger.info('Existing user settings retrieved', { userId, settingsCount: Object.keys(settings.equipment_settings || {}).length });
+            logger.info('Existing user settings retrieved', { 
+                userId, 
+                settingsCount: Object.keys(result.data.equipment_settings || {}).length,
+                etag: result.etag
+            });
+            
             const response = formatSuccessResponse({
-                settings: settings,
+                settings: result.data,
                 userId: userId,
-                isNewUser: false
+                isNewUser: false,
+                etag: result.etag,
+                lastModified: result.lastModified
             }, logger);
 
             return {
@@ -150,10 +158,11 @@ exports.handler = async(event, context) => {
                 };
             }
 
-            let settings;
+            let settings, ifMatch;
             try {
                 const requestBody = JSON.parse(event.body);
                 settings = requestBody.settings;
+                ifMatch = requestBody.ifMatch; // Optional ETag for optimistic locking
             } catch (parseError) {
                 logger.warn('Invalid JSON in request body', { userId });
                 const errorResponse = formatErrorResponse(logger, parseError, 'Invalid JSON in request body');
@@ -183,28 +192,64 @@ exports.handler = async(event, context) => {
                 correlationId: logger.correlationId
             };
 
-            // Save to Netlify Blobs
-            const result = await userStore.setJSON(settingsKey, settings, { metadata });
-            
-            logger.info('Settings saved successfully', { 
-                userId, 
-                modified: result.modified, 
-                etag: result.etag,
-                equipmentCount: Object.keys(settings.equipment_settings || {}).length
-            });
+            // Prepare save options with ETag-based optimistic locking
+            const saveOptions = { metadata };
+            if (ifMatch) {
+                saveOptions.onlyIfMatch = ifMatch;
+                logger.info('Using ETag-based optimistic locking', { userId, ifMatch });
+            }
 
-            const response = formatSuccessResponse({
-                success: true,
-                userId: userId,
-                modified: result.modified,
-                etag: result.etag
-            }, logger);
+            // Save to Netlify Blobs with proper ETag handling
+            try {
+                const result = await userStore.setJSON(settingsKey, settings, saveOptions);
+                
+                // Check if the write was actually performed (modified = false means ETag mismatch)
+                if (ifMatch && !result.modified) {
+                    logger.warn('ETag mismatch - concurrent modification detected', { 
+                        userId, 
+                        providedETag: ifMatch,
+                        modified: result.modified
+                    });
+                    
+                    const conflictResponse = formatErrorResponse(logger, 
+                        new Error('ETag mismatch'), 
+                        'Conflict: Data was modified by another client. Please refresh and try again.');
+                    
+                    return {
+                        statusCode: 409, // Conflict
+                        headers,
+                        body: JSON.stringify(conflictResponse)
+                    };
+                }
+                
+                logger.info('Settings saved successfully', { 
+                    userId, 
+                    modified: result.modified, 
+                    etag: result.etag,
+                    hadIfMatch: !!ifMatch,
+                    equipmentCount: Object.keys(settings.equipment_settings || {}).length
+                });
 
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify(response)
-            };
+                const response = formatSuccessResponse({
+                    success: true,
+                    userId: userId,
+                    modified: result.modified,
+                    etag: result.etag
+                }, logger);
+
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify(response)
+                };
+                
+            } catch (error) {
+                // Handle potential onlyIfMatch errors or other issues
+                logger.error('Error saving settings', error, { userId, hadIfMatch: !!ifMatch });
+                
+                // Re-throw to be handled by outer catch block
+                throw error;
+            }
 
         } else {
             // Method not allowed
