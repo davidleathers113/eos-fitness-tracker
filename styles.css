@@ -1077,16 +1077,22 @@ fieldset {
     background: rgba(0, 0, 0, 0.5);
     z-index: 1000;
     animation: fadeIn 0.3s ease;
+    justify-content: center;
+    align-items: center;
 }
 
+.modal.hidden,
 .modal-overlay.hidden {
     display: none !important;
 }
 
 /* Active modal has higher z-index */
+.modal.active,
 .modal-overlay.active {
     display: flex !important;
     z-index: 1001;
+    justify-content: center;
+    align-items: center;
 }
 
 /* Body scroll lock when modal is open */

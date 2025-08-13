@@ -590,42 +590,105 @@ class EOSFitnessApp {
      * Show equipment detail modal
      */
     showEquipmentDetail(equipmentId) {
-        const state = getState();
-        const equipment = state.equipment.equipment.find(e => e.id === equipmentId);
-        
-        if (!equipment) {
-            showError('Equipment not found');
-            return;
-        }
-        
-        const modal = getById('equipment-modal');
-        if (!modal) return;
-        
-        const modalContent = modal.querySelector('.modal-content');
-        if (modalContent) {
-            modalContent.innerHTML = `
-                <div class="modal-header">
-                    <h2>${equipment.name}</h2>
-                    <button class="modal-close" data-action="close-equipment-modal">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="equipment-detail-info">
-                        <p><strong>Zone:</strong> ${equipment.zone}</p>
-                        <p><strong>Type:</strong> ${equipment.type}</p>
-                        <p><strong>Movement Pattern:</strong> ${equipment.pattern}</p>
-                        <p><strong>Primary Muscles:</strong> ${(equipment.muscles?.primary || []).join(', ')}</p>
-                        <p><strong>Secondary Muscles:</strong> ${(equipment.muscles?.secondary || []).join(', ')}</p>
+        try {
+            console.log('Opening equipment detail for:', equipmentId);
+            
+            const state = getState();
+            const equipment = state.equipment.equipment.find(e => e.id === equipmentId);
+            
+            if (!equipment) {
+                showError('Equipment not found');
+                console.error('Equipment not found with ID:', equipmentId);
+                return;
+            }
+            
+            const modal = getById('equipment-modal');
+            if (!modal) {
+                console.error('Modal element not found');
+                return;
+            }
+            
+            // Format settings display
+            let settingsHtml = 'No settings saved yet';
+            if (equipment.settings) {
+                if (typeof equipment.settings === 'object') {
+                    const settingsList = [];
+                    if (equipment.settings.automatic !== undefined) {
+                        settingsList.push(`Automatic: ${equipment.settings.automatic ? 'Yes' : 'No'}`);
+                    }
+                    if (equipment.settings.note) {
+                        settingsList.push(`Note: ${equipment.settings.note}`);
+                    }
+                    if (equipment.settings.weight) {
+                        settingsList.push(`Weight: ${equipment.settings.weight}`);
+                    }
+                    if (equipment.settings.reps) {
+                        settingsList.push(`Reps: ${equipment.settings.reps}`);
+                    }
+                    if (equipment.settings.seat) {
+                        settingsList.push(`Seat: ${equipment.settings.seat}`);
+                    }
+                    settingsHtml = settingsList.length > 0 ? settingsList.join('<br>') : 'No specific settings';
+                } else {
+                    settingsHtml = equipment.settings;
+                }
+            }
+            
+            // Format type display
+            const typeDisplay = equipment.type ? equipment.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown';
+            
+            // Format pattern display
+            const patternDisplay = equipment.pattern ? equipment.pattern.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown';
+            
+            const modalContent = modal.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.innerHTML = `
+                    <div class="modal-header">
+                        <h2>${equipment.name}</h2>
+                        <button class="modal-close" data-action="close-equipment-modal">&times;</button>
                     </div>
-                    <div class="equipment-settings">
-                        <h3>My Settings</h3>
-                        <p>${equipment.settings || 'No settings saved yet'}</p>
+                    <div class="modal-body">
+                        <div class="equipment-detail-info">
+                            <p><strong>Zone:</strong> ${equipment.zone} - ${state.equipment.metadata?.zones?.[equipment.zone] || ''}</p>
+                            <p><strong>Type:</strong> ${typeDisplay}</p>
+                            <p><strong>Movement Pattern:</strong> ${patternDisplay}</p>
+                            <p><strong>Primary Muscles:</strong> ${(equipment.muscles?.primary || []).join(', ')}</p>
+                            <p><strong>Secondary Muscles:</strong> ${(equipment.muscles?.secondary || []).join(', ')}</p>
+                        </div>
+                        <div class="equipment-settings">
+                            <h3>Equipment Settings</h3>
+                            <p>${settingsHtml}</p>
+                        </div>
+                        ${equipment.programming ? `
+                        <div class="equipment-programming">
+                            <h3>Programming Recommendations</h3>
+                            ${equipment.programming.strength ? `<p><strong>Strength:</strong> ${equipment.programming.strength}</p>` : ''}
+                            ${equipment.programming.hypertrophy ? `<p><strong>Hypertrophy:</strong> ${equipment.programming.hypertrophy}</p>` : ''}
+                            ${equipment.programming.endurance ? `<p><strong>Endurance:</strong> ${equipment.programming.endurance}</p>` : ''}
+                        </div>
+                        ` : ''}
                     </div>
-                </div>
-            `;
+                `;
+                
+                // Add event listener to close button
+                const closeBtn = modalContent.querySelector('.modal-close');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', () => {
+                        modal.classList.add('hidden');
+                        modal.classList.remove('active');
+                    });
+                }
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('active');
+            
+            console.log('Modal opened successfully');
+            
+        } catch (error) {
+            console.error('Error showing equipment detail:', error);
+            showError('Failed to show equipment details');
         }
-        
-        modal.classList.remove('hidden');
-        modal.classList.add('active');
     }
     
     /**
