@@ -232,14 +232,30 @@ class EOSFitnessApp {
     }
     
     /**
-     * Load equipment database
+     * Load equipment database with enhanced error handling
      */
     async loadEquipmentDatabase() {
         try {
             const response = await fetch('/database/equipment-database.json');
-            if (!response.ok) throw new Error('Failed to load equipment database');
+            
+            if (!response.ok) {
+                throw new Error(`Failed to load equipment: ${response.status} ${response.statusText}`);
+            }
             
             const data = await response.json();
+            
+            // Validate data structure
+            if (!data.equipment || !Array.isArray(data.equipment)) {
+                throw new Error('Invalid equipment data format');
+            }
+            
+            // Cache for offline use
+            try {
+                storage.set('equipment-database', data);
+            } catch (cacheError) {
+                console.warn('Failed to cache equipment data:', cacheError);
+            }
+            
             setState({ equipment: data });
             emit(EVT.EQUIPMENT_LOADED, data);
             
@@ -248,10 +264,22 @@ class EOSFitnessApp {
             
             // Try local backup
             const localData = storage.get('equipment-database');
-            if (localData) {
+            if (localData && localData.equipment) {
+                console.log('Using cached equipment data');
                 setState({ equipment: localData });
                 emit(EVT.EQUIPMENT_LOADED, localData);
+                
+                // Show notification that we're using cached data
+                emit(EVT.NOTIFICATION, {
+                    message: 'Using cached equipment data. Some information may be outdated.',
+                    type: 'warning'
+                });
             } else {
+                // Critical failure - show error to user
+                emit(EVT.ERROR, {
+                    message: 'Unable to load equipment data. Please check your connection and refresh.',
+                    type: 'error'
+                });
                 throw error;
             }
         }
@@ -343,6 +371,25 @@ class EOSFitnessApp {
                 const action = actionBtn.dataset.action;
                 this.handleAction(action);
                 return;
+            }
+            
+            // ESC key to close modals
+            if (e.target.classList.contains('modal')) {
+                if (e.target === e.currentTarget) {
+                    e.target.classList.add('hidden');
+                    e.target.classList.remove('active');
+                }
+            }
+        });
+        
+        // ESC key to close modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const activeModal = document.querySelector('.modal.active:not(.hidden)');
+                if (activeModal) {
+                    activeModal.classList.add('hidden');
+                    activeModal.classList.remove('active');
+                }
             }
         });
         
@@ -520,7 +567,7 @@ class EOSFitnessApp {
         const modal = getById('auth-modal');
         if (modal) {
             modal.classList.remove('hidden');
-            modalManager.setActiveModal(modal);
+            modal.classList.add('active');
             
             // Focus first input
             const firstInput = modal.querySelector('input');
@@ -535,7 +582,7 @@ class EOSFitnessApp {
         const modal = getById('keyboard-help-modal');
         if (modal) {
             modal.classList.remove('hidden');
-            modalManager.setActiveModal(modal);
+            modal.classList.add('active');
         }
     }
     
@@ -578,7 +625,7 @@ class EOSFitnessApp {
         }
         
         modal.classList.remove('hidden');
-        modalManager.setActiveModal(modal);
+        modal.classList.add('active');
     }
     
     /**
@@ -605,7 +652,7 @@ class EOSFitnessApp {
                 const modal = document.querySelector('.modal:not(.hidden), .modal-overlay:not(.hidden)');
                 if (modal) {
                     modal.classList.add('hidden');
-                    modalManager.clearActiveModal();
+                    modal.classList.remove('active');
                 }
                 break;
             case 'switch-to-login':

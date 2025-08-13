@@ -852,7 +852,7 @@ button, a, input, select, textarea {
 
 .muscle-groups {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: var(--space-1);
     margin-bottom: var(--space-2);
     padding: var(--space-2);
@@ -860,24 +860,50 @@ button, a, input, select, textarea {
     border-radius: var(--radius-md);
 }
 
-.muscle-groups .primary {
-    font-weight: var(--font-weight-medium);
-    color: var(--text-primary);
-    font-size: var(--font-size-sm);
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
-}
-
-.muscle-groups .primary::before {
-    content: '💪';
-    font-size: var(--font-size-base);
-}
-
 .muscle-groups .secondary {
     color: var(--text-secondary);
     font-size: var(--font-size-sm);
     margin-left: var(--space-3);
+}
+
+/* Muscle tag badges with icons */
+.muscle-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    background: var(--surface-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+    margin: 0.125rem;
+}
+
+.muscle-tag.primary {
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+}
+
+/* SVG muscle icons */
+.muscle-tag .muscle-icon {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+/* Ensure SVG icons inherit text color */
+.muscle-tag svg {
+    fill: currentColor;
+    stroke: currentColor;
+}
+
+/* Dark theme muscle tag adjustments */
+[data-theme="dark"] .muscle-tag {
+    background: var(--surface-secondary);
+    border-color: var(--border-subtle);
 }
 
 .user-settings-preview {

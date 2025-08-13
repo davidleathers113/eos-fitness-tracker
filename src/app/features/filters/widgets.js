@@ -4,6 +4,7 @@
 
 import { getState, setState } from '../../core/store.js';
 import { emit, EVT } from '../../core/events.js';
+import { debounce } from '../../core/dom.js';
 
 export function initFilters() {
     console.log('Filters initialized');
@@ -30,11 +31,16 @@ export function initFilters() {
         }
     });
     
-    // Search input
+    // Search input with debouncing for better performance
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
+        // Create debounced search function (300ms delay)
+        const debouncedSearch = debounce((value) => {
+            updateFilter({ search: value });
+        }, 300);
+        
         searchInput.addEventListener('input', (e) => {
-            updateFilter({ search: e.target.value });
+            debouncedSearch(e.target.value);
         });
     }
 }
