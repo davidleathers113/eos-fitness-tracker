@@ -708,7 +708,7 @@ button, a, input, select, textarea {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     padding: var(--space-2) 0;
     border-bottom: 1px solid var(--border-default);
 }
@@ -720,16 +720,21 @@ button, a, input, select, textarea {
 .filter-label {
     font-weight: var(--font-weight-semibold);
     font-size: var(--font-size-sm);
-    min-width: 80px;
+    min-width: 70px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-secondary);
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
 }
 
 .filter-buttons {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+    flex: 1;
+    align-items: center;
 }
 
 .filter-btn {
@@ -1649,8 +1654,15 @@ body.modal-open {
     }
     
     .filter-group {
-        flex-direction: column;
-        align-items: flex-start;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .filter-label {
+        min-width: 55px;
+        font-size: 0.7rem;
     }
     
     .stats-summary {
