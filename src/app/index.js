@@ -309,12 +309,40 @@ class EOSFitnessApp {
      * Setup event listeners
      */
     setupEventListeners() {
-        // Navigation
+        // Navigation and UI controls
         document.addEventListener('click', (e) => {
+            // Navigation buttons
             const navBtn = e.target.closest('.nav-btn');
             if (navBtn) {
                 const view = navBtn.dataset.view;
                 this.navigateToView(view);
+                return;
+            }
+            
+            // Theme toggle
+            if (e.target.id === 'theme-toggle' || e.target.closest('#theme-toggle')) {
+                this.toggleTheme();
+                return;
+            }
+            
+            // Density toggle
+            if (e.target.id === 'density-toggle' || e.target.closest('#density-toggle')) {
+                this.toggleDensity();
+                return;
+            }
+            
+            // Auth button
+            if (e.target.id === 'auth-btn') {
+                this.handleAuthClick();
+                return;
+            }
+            
+            // Footer action buttons
+            const actionBtn = e.target.closest('[data-action]');
+            if (actionBtn) {
+                const action = actionBtn.dataset.action;
+                this.handleAction(action);
+                return;
             }
         });
         
@@ -326,6 +354,16 @@ class EOSFitnessApp {
         // Listen for filter changes
         on(EVT.FILTERS_CHANGED, () => {
             updateURL({ includeFilters: true });
+        });
+        
+        // Listen for equipment selection
+        on('equipment/select', (equipmentId) => {
+            this.showEquipmentDetail(equipmentId);
+        });
+        
+        // Listen for keyboard help request
+        on('keyboard/help', () => {
+            this.showKeyboardHelp();
         });
         
         // Listen for errors
@@ -424,6 +462,198 @@ class EOSFitnessApp {
             statusBar.textContent = 'Ready';
             statusBar.classList.remove('loading');
         }
+    }
+    
+    /**
+     * Toggle theme
+     */
+    toggleTheme() {
+        const currentTheme = getState().theme || 'light';
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        
+        document.body.dataset.theme = newTheme;
+        setState({ theme: newTheme });
+        storage.set(STORAGE_KEYS.THEME, newTheme);
+        
+        // Update icon
+        const themeIcon = document.querySelector('#theme-toggle .theme-icon');
+        if (themeIcon) {
+            themeIcon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        }
+        
+        announce(`Switched to ${newTheme} theme`);
+    }
+    
+    /**
+     * Toggle density
+     */
+    toggleDensity() {
+        const currentDensity = getState().density || 'comfortable';
+        const newDensity = currentDensity === 'comfortable' ? 'compact' : 'comfortable';
+        
+        document.body.dataset.density = newDensity;
+        setState({ density: newDensity });
+        storage.set(STORAGE_KEYS.DENSITY, newDensity);
+        
+        announce(`Switched to ${newDensity} view`);
+    }
+    
+    /**
+     * Handle auth button click
+     */
+    handleAuthClick() {
+        const user = getCurrentUser();
+        if (user.isAuthenticated) {
+            // Logout
+            emit(EVT.AUTH_LOGOUT);
+            showSuccess('Logged out successfully');
+        } else {
+            // Show auth modal
+            this.showAuthModal();
+        }
+    }
+    
+    /**
+     * Show auth modal
+     */
+    showAuthModal() {
+        const modal = getById('auth-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modalManager.setActiveModal(modal);
+            
+            // Focus first input
+            const firstInput = modal.querySelector('input');
+            if (firstInput) firstInput.focus();
+        }
+    }
+    
+    /**
+     * Show keyboard help modal
+     */
+    showKeyboardHelp() {
+        const modal = getById('keyboard-help-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modalManager.setActiveModal(modal);
+        }
+    }
+    
+    /**
+     * Show equipment detail modal
+     */
+    showEquipmentDetail(equipmentId) {
+        const state = getState();
+        const equipment = state.equipment.equipment.find(e => e.id === equipmentId);
+        
+        if (!equipment) {
+            showError('Equipment not found');
+            return;
+        }
+        
+        const modal = getById('equipment-modal');
+        if (!modal) return;
+        
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.innerHTML = `
+                <div class="modal-header">
+                    <h2>${equipment.name}</h2>
+                    <button class="modal-close" data-action="close-equipment-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="equipment-detail-info">
+                        <p><strong>Zone:</strong> ${equipment.zone}</p>
+                        <p><strong>Type:</strong> ${equipment.type}</p>
+                        <p><strong>Movement Pattern:</strong> ${equipment.pattern}</p>
+                        <p><strong>Primary Muscles:</strong> ${(equipment.muscles?.primary || []).join(', ')}</p>
+                        <p><strong>Secondary Muscles:</strong> ${(equipment.muscles?.secondary || []).join(', ')}</p>
+                    </div>
+                    <div class="equipment-settings">
+                        <h3>My Settings</h3>
+                        <p>${equipment.settings || 'No settings saved yet'}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        modal.classList.remove('hidden');
+        modalManager.setActiveModal(modal);
+    }
+    
+    /**
+     * Handle footer action buttons
+     */
+    handleAction(action) {
+        switch (action) {
+            case 'export-data':
+                this.exportData();
+                break;
+            case 'show-settings':
+                this.navigateToView('settings');
+                break;
+            case 'show-keyboard-help':
+                this.showKeyboardHelp();
+                break;
+            case 'show-about':
+                this.showAbout();
+                break;
+            case 'close-auth-modal':
+            case 'close-keyboard-help':
+            case 'close-migration-modal':
+            case 'close-equipment-modal':
+                const modal = document.querySelector('.modal:not(.hidden), .modal-overlay:not(.hidden)');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modalManager.clearActiveModal();
+                }
+                break;
+            case 'switch-to-login':
+                getById('auth-register')?.classList.add('hidden');
+                getById('auth-login')?.classList.remove('hidden');
+                break;
+            case 'switch-to-register':
+                getById('auth-login')?.classList.add('hidden');
+                getById('auth-register')?.classList.remove('hidden');
+                break;
+        }
+    }
+    
+    /**
+     * Export data
+     */
+    async exportData() {
+        try {
+            const state = getState();
+            const exportData = {
+                settings: state.settings,
+                workoutLogs: state.workoutLogs,
+                timestamp: new Date().toISOString(),
+                version: '2.0.0'
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `eos-fitness-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showSuccess('Data exported successfully');
+        } catch (error) {
+            console.error('Export failed:', error);
+            showError('Failed to export data');
+        }
+    }
+    
+    /**
+     * Show about modal
+     */
+    showAbout() {
+        showToast('EOS Fitness Tracker v2.0 - Personal Equipment Settings Manager', { type: 'info', duration: 5000 });
     }
     
     /**

@@ -48,20 +48,25 @@ function renderEquipment() {
     
     if (filter.muscle && filter.muscle !== 'all') {
         filtered = filtered.filter(item => {
+            // Equipment data has muscles.primary and muscles.secondary
             const muscles = [
-                ...(item.primaryMuscles || []),
-                ...(item.secondaryMuscles || [])
+                ...(item.muscles?.primary || []),
+                ...(item.muscles?.secondary || [])
             ];
-            return muscles.includes(filter.muscle);
+            return muscles.some(m => m.toLowerCase().includes(filter.muscle.toLowerCase()));
         });
     }
     
     if (filter.search) {
         const search = filter.search.toLowerCase();
         filtered = filtered.filter(item => {
+            const muscles = [
+                ...(item.muscles?.primary || []),
+                ...(item.muscles?.secondary || [])
+            ];
             return item.name.toLowerCase().includes(search) ||
                    item.zone.toLowerCase().includes(search) ||
-                   (item.primaryMuscles || []).some(m => m.toLowerCase().includes(search));
+                   muscles.some(m => m.toLowerCase().includes(search));
         });
     }
     
@@ -98,7 +103,7 @@ function createEquipmentCard(equipment) {
         </div>
         <div class="equipment-details">
             <div class="muscle-groups">
-                ${(equipment.primaryMuscles || []).map(m => 
+                ${[...(equipment.muscles?.primary || []), ...(equipment.muscles?.secondary || [])].map(m => 
                     `<span class="muscle-tag primary">${m}</span>`
                 ).join('')}
             </div>
