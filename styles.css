@@ -735,6 +735,7 @@ button, a, input, select, textarea {
 .filter-btn {
     padding: var(--space-1) var(--space-2);
     background: var(--surface-primary);
+    color: var(--text-primary);
     border: 2px solid var(--border-default);
     border-radius: var(--radius-full);
     cursor: pointer;
@@ -2591,24 +2592,36 @@ select:focus,
 /* Dark mode filter button fixes */
 [data-theme="dark"] .filter-btn {
     background: var(--surface-secondary);
-    color: var(--text-primary);
+    color: var(--text-primary) !important;
     border-color: var(--border-default);
+}
+
+[data-theme="dark"] .filter-btn:not(.active) {
+    color: #ffffff !important;
+    background: #2d2d2d;
+    border-color: #404040;
 }
 
 [data-theme="dark"] .filter-btn:hover {
     background: var(--surface-elevated);
     border-color: var(--border-hover);
-    color: var(--text-primary);
+    color: var(--text-primary) !important;
 }
 
 [data-theme="dark"] .filter-btn.active {
     background: var(--color-primary-500);
-    color: var(--text-inverse);
+    color: #ffffff !important;
     border-color: var(--color-primary-500);
 }
 
 [data-theme="dark"] .filter-label {
-    color: var(--text-secondary);
+    color: var(--text-secondary) !important;
+}
+
+/* Ensure zone and muscle filter buttons are visible in dark mode */
+[data-theme="dark"] .zone-filter,
+[data-theme="dark"] .muscle-filter {
+    color: #ffffff !important;
 }
 
 .skeleton::after {
