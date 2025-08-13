@@ -1087,7 +1087,11 @@ fieldset {
 }
 
 /* Active modal has higher z-index */
-.modal.active,
+.modal.active {
+    display: block !important;
+    z-index: 1001;
+}
+
 .modal-overlay.active {
     display: flex !important;
     z-index: 1001;
@@ -1186,8 +1190,34 @@ body.modal-open {
 
 .detail-section {
     background: var(--bg-primary);
-    padding: 1rem;
-    border-radius: var(--border-radius);
+}
+
+/* Equipment detail styles */
+.equipment-detail-info {
+    background: var(--surface-primary);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-3);
+}
+
+.equipment-detail-info p {
+    margin: var(--space-2) 0;
+    color: var(--text-primary);
+}
+
+.equipment-settings,
+.equipment-programming {
+    background: var(--surface-secondary);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-3);
+}
+
+.equipment-settings h3,
+.equipment-programming h3 {
+    margin-bottom: var(--space-2);
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
 }
 
 .detail-section h3 {
