@@ -72,7 +72,8 @@ function renderEquipment() {
     if (!container) return;
     
     const state = getState();
-    const { equipment, filter } = state;
+    const equipment = state.equipment || {};
+    const filter = state.filter || { zone: 'all', muscle: 'all', search: '' };
     
     if (!equipment.equipment || equipment.equipment.length === 0) {
         showSkeletonLoading(container, { type: 'cards', count: 6 });
