@@ -13,7 +13,7 @@ import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../core/constants.js';
  */
 export async function getWorkoutLogs() {
     try {
-        const response = await apiClient.get('/user-workouts');
+        const response = await apiClient.get('/workout-logs');
         
         if (!response.error && response.workoutLogs) {
             return {
@@ -39,7 +39,7 @@ export async function getWorkoutLogs() {
  */
 export async function addWorkout(workout) {
     try {
-        const response = await apiClient.post('/user-workouts', { workout });
+        const response = await apiClient.post('/workout-logs', { workout });
         
         if (!response.error) {
             emit(EVT.WORKOUT_SAVED, workout);
@@ -68,7 +68,7 @@ export async function addWorkout(workout) {
  */
 export async function updateWorkout(workoutId, updates) {
     try {
-        const response = await apiClient.put(`/user-workouts/${workoutId}`, {
+        const response = await apiClient.put(`/workout-logs/${workoutId}`, {
             updates
         });
         
@@ -96,7 +96,7 @@ export async function updateWorkout(workoutId, updates) {
  */
 export async function deleteWorkout(workoutId) {
     try {
-        const response = await apiClient.delete(`/user-workouts/${workoutId}`);
+        const response = await apiClient.delete(`/workout-logs/${workoutId}`);
         
         if (!response.error) {
             return {
@@ -133,7 +133,7 @@ export async function getWorkoutStats(options = {}) {
         if (endDate) params.append('endDate', endDate);
         params.append('groupBy', groupBy);
         
-        const response = await apiClient.get(`/user-workouts/stats?${params}`);
+        const response = await apiClient.get(`/workout-logs/stats?${params}`);
         
         if (!response.error && response.stats) {
             return {
@@ -159,7 +159,7 @@ export async function getWorkoutStats(options = {}) {
  */
 export async function saveWorkoutTemplate(template) {
     try {
-        const response = await apiClient.post('/user-workouts/templates', {
+        const response = await apiClient.post('/workout-logs/templates', {
             template
         });
         
@@ -187,7 +187,7 @@ export async function saveWorkoutTemplate(template) {
  */
 export async function getWorkoutTemplates() {
     try {
-        const response = await apiClient.get('/user-workouts/templates');
+        const response = await apiClient.get('/workout-logs/templates');
         
         if (!response.error && response.templates) {
             return {

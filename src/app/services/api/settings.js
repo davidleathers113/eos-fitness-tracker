@@ -96,7 +96,7 @@ export async function updateEquipmentSettings(equipmentId, settings) {
  */
 export async function exportUserData() {
     try {
-        const response = await apiClient.get('/user-export');
+        const response = await apiClient.get('/export-data');
         
         if (!response.error && response.data) {
             emit(EVT.DATA_EXPORT, response.data);
@@ -130,21 +130,12 @@ export async function resetUserData(options = {}) {
     } = options;
     
     try {
-        const response = await apiClient.post('/user-reset', {
-            resetSettings,
-            resetWorkouts,
-            keepPreferences
-        });
-        
-        if (!response.error) {
-            emit(EVT.DATA_RESET, { options });
-            return {
-                success: true,
-                message: SUCCESS_MESSAGES.DATA_RESET
-            };
-        }
-        
-        return response;
+        // Reset endpoint not implemented in Netlify functions
+        // Return error for now
+        return {
+            error: true,
+            message: 'Reset functionality not yet implemented'
+        };
     } catch (error) {
         console.error('Failed to reset data:', error);
         return {

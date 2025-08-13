@@ -14,8 +14,8 @@ import { STORAGE_KEYS, SUCCESS_MESSAGES } from '../../core/constants.js';
  */
 export async function registerUser(userName) {
     try {
-        const response = await apiClient.post('/user-register', 
-            { userName },
+        const response = await apiClient.post('/auth', 
+            { action: 'create_user', userName },
             { requireAuth: false }
         );
         
@@ -54,8 +54,8 @@ export async function registerUser(userName) {
  */
 export async function loginUser(userId) {
     try {
-        const response = await apiClient.post('/user-login',
-            { userId },
+        const response = await apiClient.post('/auth',
+            { action: 'generate_token', userId },
             { requireAuth: false }
         );
         
@@ -138,9 +138,9 @@ export function markMigrationComplete() {
  */
 export async function migrateData(settings, workoutLogs) {
     try {
-        const response = await apiClient.post('/user-migrate', {
-            settings,
-            workoutLogs
+        const response = await apiClient.post('/migrate-data', {
+            localSettings: settings,
+            localWorkoutLogs: workoutLogs
         });
         
         if (!response.error) {
@@ -198,9 +198,11 @@ export async function refreshToken() {
     }
     
     try {
-        const response = await apiClient.post('/user-refresh', {
+        // Use login endpoint for refresh since no separate refresh endpoint exists
+        const response = await apiClient.post('/auth', {
+            action: 'generate_token',
             userId: apiClient.userId
-        });
+        }, { requireAuth: false });
         
         if (!response.error && response.token) {
             apiClient.setAuth(apiClient.userId, response.token);

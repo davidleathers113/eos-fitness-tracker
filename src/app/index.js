@@ -11,7 +11,7 @@ import { $, getById, announce } from './core/dom.js';
 
 // Service imports
 import { apiClient } from './services/api/client.js';
-import { initAuth, getCurrentUser } from './services/api/auth.js';
+import { getCurrentUser } from './services/api/auth.js';
 import { getSettings } from './services/api/settings.js';
 import { getWorkoutLogs } from './services/api/workouts.js';
 import { offlineQueue } from './services/storage/offlineQueue.js';
@@ -102,8 +102,8 @@ class EOSFitnessApp {
      * Initialize core services
      */
     async initializeServices() {
-        // Initialize authentication
-        const isAuthenticated = await initAuth();
+        // Initialize authentication (bound to apiClient instance)
+        const isAuthenticated = await apiClient.initAuth();
         console.log('Auth initialized:', isAuthenticated);
         
         // Initialize PWA features
@@ -236,7 +236,7 @@ class EOSFitnessApp {
      */
     async loadEquipmentDatabase() {
         try {
-            const response = await fetch('/data/equipment-database.json');
+            const response = await fetch('/database/equipment-database.json');
             if (!response.ok) throw new Error('Failed to load equipment database');
             
             const data = await response.json();
@@ -391,12 +391,21 @@ class EOSFitnessApp {
      * Show app loading state
      */
     showAppLoading() {
-        const mainContent = getById(DOM_IDS.MAIN_CONTENT);
-        if (mainContent) {
-            showSkeletonLoading(mainContent, {
+        // Don't clear main content - just show loading in the equipment list
+        const equipmentList = getById(DOM_IDS.EQUIPMENT_LIST);
+        if (equipmentList) {
+            showSkeletonLoading(equipmentList, {
                 type: 'cards',
-                count: 6
+                count: 6,
+                clear: false  // Don't clear existing HTML
             });
+        }
+        
+        // Update status bar
+        const statusBar = getById('status-bar');
+        if (statusBar) {
+            statusBar.textContent = 'Loading application...';
+            statusBar.classList.add('loading');
         }
     }
     
@@ -404,9 +413,16 @@ class EOSFitnessApp {
      * Hide app loading state
      */
     hideAppLoading() {
-        const mainContent = getById(DOM_IDS.MAIN_CONTENT);
-        if (mainContent) {
-            hideSkeletonLoading(mainContent);
+        const equipmentList = getById(DOM_IDS.EQUIPMENT_LIST);
+        if (equipmentList) {
+            hideSkeletonLoading(equipmentList);
+        }
+        
+        // Update status bar
+        const statusBar = getById('status-bar');
+        if (statusBar) {
+            statusBar.textContent = 'Ready';
+            statusBar.classList.remove('loading');
         }
     }
     

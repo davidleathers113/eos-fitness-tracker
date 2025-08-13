@@ -5,6 +5,7 @@
   "main": "src/index.html",
   "scripts": {
     "start": "open src/index.html",
+    "dev": "netlify dev",
     "setup": "bash scripts/setup.sh",
     "backup": "cp -r data backups/backup-$(date +%Y%m%d-%H%M%S)"
   },
@@ -24,5 +25,8 @@
   },
   "dependencies": {
     "@netlify/blobs": "^10.0.8"
+  },
+  "devDependencies": {
+    "netlify-cli": "^23.1.4"
   }
 }
