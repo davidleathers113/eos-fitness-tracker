@@ -27,6 +27,126 @@ function updateFilterState(newState) {
     }
 }
 
+// ============================================
+// Skeleton Loading Functions
+// ============================================
+function createSkeletonCard() {
+    const card = document.createElement('div');
+    card.className = 'skeleton-card';
+    
+    const header = document.createElement('div');
+    header.className = 'skeleton-header';
+    
+    const title = document.createElement('div');
+    title.className = 'skeleton skeleton-title';
+    
+    const badge = document.createElement('div');
+    badge.className = 'skeleton skeleton-badge';
+    
+    header.appendChild(title);
+    header.appendChild(badge);
+    
+    const text1 = document.createElement('div');
+    text1.className = 'skeleton skeleton-text medium';
+    
+    const text2 = document.createElement('div');
+    text2.className = 'skeleton skeleton-text long';
+    
+    const text3 = document.createElement('div');
+    text3.className = 'skeleton skeleton-text short';
+    
+    const actions = document.createElement('div');
+    actions.className = 'skeleton-actions';
+    
+    for (let i = 0; i < 3; i++) {
+        const btn = document.createElement('div');
+        btn.className = 'skeleton skeleton-button';
+        actions.appendChild(btn);
+    }
+    
+    card.appendChild(header);
+    card.appendChild(text1);
+    card.appendChild(text2);
+    card.appendChild(text3);
+    card.appendChild(actions);
+    
+    return card;
+}
+
+function showSkeletonLoading(container, count = 6) {
+    if (!container) return;
+    
+    // Clear existing content
+    container.innerHTML = '';
+    
+    // Create loading container
+    const loadingContainer = document.createElement('div');
+    loadingContainer.className = 'loading-container';
+    
+    // Add skeleton cards
+    for (let i = 0; i < count; i++) {
+        loadingContainer.appendChild(createSkeletonCard());
+    }
+    
+    container.appendChild(loadingContainer);
+}
+
+// ============================================
+// Toast Notification System
+// ============================================
+let toastContainer = null;
+
+function initToastContainer() {
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container';
+        document.body.appendChild(toastContainer);
+    }
+    return toastContainer;
+}
+
+function showToast(message, type = 'info', duration = 4000) {
+    const container = initToastContainer();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icon = document.createElement('span');
+    icon.className = 'toast-icon';
+    switch(type) {
+        case 'success':
+            icon.textContent = '✓';
+            break;
+        case 'error':
+            icon.textContent = '⚠';
+            break;
+        case 'warning':
+            icon.textContent = '!';
+            break;
+        default:
+            icon.textContent = 'ℹ';
+    }
+    
+    const text = document.createElement('span');
+    text.className = 'toast-text';
+    text.textContent = message;
+    
+    toast.appendChild(icon);
+    toast.appendChild(text);
+    
+    container.appendChild(toast);
+    
+    // Auto-remove after duration
+    setTimeout(() => {
+        toast.classList.add('removing');
+        setTimeout(() => {
+            toast.remove();
+        }, 250);
+    }, duration);
+    
+    return toast;
+}
+
 // Clear all filters and search
 function clearAllFilters() {
     const searchInput = document.getElementById('search-input');
@@ -2154,6 +2274,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     themeManager.init();
     densityManager.init();
     
+    // Show welcome toast on first visit with new design
+    if (!localStorage.getItem('eos-design-welcomed')) {
+        setTimeout(() => {
+            showToast('Welcome! Experience the new premium design system.', 'success', 5000);
+            localStorage.setItem('eos-design-welcomed', 'true');
+        }, 2000);
+    }
+    
     // Set up authentication form listeners
     document.getElementById('register-form').addEventListener('submit', handleRegistration);
     document.getElementById('login-form').addEventListener('submit', handleLogin);
@@ -2642,12 +2770,130 @@ function setupEventListeners() {
         searchInput.value = initialState.search;
     }
     
-    // Search with debouncing
+    // Enhanced search with debouncing and suggestions
     if (searchInput) {
+        let suggestionContainer = null;
+        
+        // Create suggestions container
+        function createSuggestionsContainer() {
+            if (!suggestionContainer) {
+                suggestionContainer = document.createElement('div');
+                suggestionContainer.className = 'search-suggestions hidden';
+                suggestionContainer.setAttribute('role', 'listbox');
+                searchInput.parentElement.appendChild(suggestionContainer);
+            }
+            return suggestionContainer;
+        }
+        
+        // Generate search suggestions
+        function generateSuggestions(query) {
+            if (!query || query.length < 2) return [];
+            
+            const suggestions = new Set();
+            const lowerQuery = query.toLowerCase();
+            
+            // Add equipment names that match
+            equipmentData.equipment.forEach(eq => {
+                if (eq.name && eq.name.toLowerCase().includes(lowerQuery)) {
+                    suggestions.add(eq.name);
+                }
+            });
+            
+            // Add muscle groups that match
+            const muscleGroups = ['chest', 'back', 'shoulders', 'legs', 'arms', 'core', 'hamstrings', 'quadriceps', 'biceps', 'triceps'];
+            muscleGroups.forEach(muscle => {
+                if (muscle.includes(lowerQuery)) {
+                    suggestions.add(muscle.charAt(0).toUpperCase() + muscle.slice(1));
+                }
+            });
+            
+            // Add zones that match
+            Object.entries(equipmentData.metadata?.zones || {}).forEach(([zone, desc]) => {
+                if (desc.toLowerCase().includes(lowerQuery)) {
+                    suggestions.add(`Zone ${zone}: ${desc}`);
+                }
+            });
+            
+            return Array.from(suggestions).slice(0, 5); // Limit to 5 suggestions
+        }
+        
+        // Show suggestions
+        function showSuggestions(suggestions) {
+            const container = createSuggestionsContainer();
+            container.innerHTML = '';
+            
+            if (suggestions.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+            
+            suggestions.forEach((suggestion, index) => {
+                const item = document.createElement('div');
+                item.className = 'search-suggestion-item';
+                item.setAttribute('role', 'option');
+                item.setAttribute('tabindex', '-1');
+                item.dataset.index = index;
+                item.textContent = suggestion;
+                
+                item.addEventListener('click', () => {
+                    searchInput.value = suggestion;
+                    updateFilterState({ search: suggestion.toLowerCase() });
+                    container.classList.add('hidden');
+                });
+                
+                container.appendChild(item);
+            });
+            
+            container.classList.remove('hidden');
+        }
+        
         const debouncedSearch = debounce(() => {
-            updateFilterState({ search: searchInput.value.toLowerCase() });
+            const query = searchInput.value.toLowerCase();
+            updateFilterState({ search: query });
+            
+            // Generate and show suggestions
+            if (query.length >= 2) {
+                const suggestions = generateSuggestions(query);
+                showSuggestions(suggestions);
+            } else if (suggestionContainer) {
+                suggestionContainer.classList.add('hidden');
+            }
         }, 150);
+        
         searchInput.addEventListener('input', debouncedSearch);
+        
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (suggestionContainer && !searchInput.contains(e.target) && !suggestionContainer.contains(e.target)) {
+                suggestionContainer.classList.add('hidden');
+            }
+        });
+        
+        // Handle arrow key navigation in suggestions
+        searchInput.addEventListener('keydown', (e) => {
+            if (!suggestionContainer || suggestionContainer.classList.contains('hidden')) return;
+            
+            const items = suggestionContainer.querySelectorAll('.search-suggestion-item');
+            let currentIndex = Array.from(items).findIndex(item => item.classList.contains('selected'));
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                currentIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                currentIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+            } else if (e.key === 'Enter' && currentIndex >= 0) {
+                e.preventDefault();
+                items[currentIndex].click();
+                return;
+            } else {
+                return;
+            }
+            
+            items.forEach((item, index) => {
+                item.classList.toggle('selected', index === currentIndex);
+            });
+        });
     }
     
     // Zone filters
@@ -2792,7 +3038,13 @@ function showView(viewName) {
 // Equipment Display Functions
 async function displayEquipment() {
     const container = document.getElementById('equipment-list');
-    if (!container || !equipmentData.equipment) return;
+    if (!container) return;
+    
+    // Show skeleton loading if data not loaded yet
+    if (!equipmentData.equipment) {
+        showSkeletonLoading(container, 9);
+        return;
+    }
     
     // Filter equipment
     let filtered = equipmentData.equipment;
