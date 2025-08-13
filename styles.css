@@ -2588,6 +2588,29 @@ select:focus,
     background: var(--color-neutral-700);
 }
 
+/* Dark mode filter button fixes */
+[data-theme="dark"] .filter-btn {
+    background: var(--surface-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-default);
+}
+
+[data-theme="dark"] .filter-btn:hover {
+    background: var(--surface-elevated);
+    border-color: var(--border-hover);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .filter-btn.active {
+    background: var(--color-primary-500);
+    color: var(--text-inverse);
+    border-color: var(--color-primary-500);
+}
+
+[data-theme="dark"] .filter-label {
+    color: var(--text-secondary);
+}
+
 .skeleton::after {
     content: '';
     position: absolute;
