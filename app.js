@@ -174,6 +174,179 @@ const announceToScreenReader = debounce((message) => {
     }
 }, 300);
 
+// Modal Manager - Centralized modal control to prevent stacking
+const modalManager = {
+    activeModal: null,
+    previousFocus: null,
+    pendingAction: null,
+    scrollPosition: 0,
+    
+    // Open a modal, closing any existing modal first
+    open(modalId, options = {}) {
+        // If same modal is already open, do nothing (idempotent)
+        if (this.activeModal === modalId) {
+            return;
+        }
+        
+        // Close any existing modal first
+        if (this.activeModal) {
+            this.close(this.activeModal, { skipFocusRestore: true });
+        }
+        
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            console.error(`Modal with id "${modalId}" not found`);
+            return;
+        }
+        
+        // Store current focus for restoration
+        this.previousFocus = options.triggerElement || document.activeElement;
+        
+        // Lock body scroll
+        this.scrollPosition = window.scrollY;
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${this.scrollPosition}px`;
+        document.body.style.width = '100%';
+        document.body.classList.add('modal-open');
+        
+        // Make background inert
+        const mainContent = document.getElementById('main-content');
+        const mainHeader = document.querySelector('.main-header');
+        const mainNav = document.querySelector('.main-nav');
+        const mainFooter = document.querySelector('.main-footer');
+        
+        if (mainContent) mainContent.setAttribute('inert', '');
+        if (mainHeader) mainHeader.setAttribute('inert', '');
+        if (mainNav) mainNav.setAttribute('inert', '');
+        if (mainFooter) mainFooter.setAttribute('inert', '');
+        
+        // Show the modal
+        modal.classList.remove('hidden');
+        modal.classList.add('active');
+        this.activeModal = modalId;
+        
+        // Set ARIA attributes if provided
+        if (options.labelledBy) {
+            modal.setAttribute('aria-labelledby', options.labelledBy);
+        }
+        if (options.describedBy) {
+            modal.setAttribute('aria-describedby', options.describedBy);
+        }
+        
+        // Ensure modal has proper role
+        if (!modal.hasAttribute('role')) {
+            modal.setAttribute('role', 'dialog');
+        }
+        if (!modal.hasAttribute('aria-modal')) {
+            modal.setAttribute('aria-modal', 'true');
+        }
+        
+        // Set up focus trap
+        if (typeof FocusTrap !== 'undefined' && FocusTrap.trapFocus) {
+            FocusTrap.trapFocus(modal);
+        }
+        
+        // Announce to screen reader
+        const announcement = options.announcement || `${modalId.replace('-', ' ')} dialog opened`;
+        announceToScreenReader(announcement);
+        
+        // Call open callback if provided
+        if (options.onOpen) {
+            options.onOpen(modal);
+        }
+    },
+    
+    // Close a specific modal or the active modal
+    close(modalId, options = {}) {
+        const targetId = modalId || this.activeModal;
+        if (!targetId) return;
+        
+        const modal = document.getElementById(targetId);
+        if (!modal) return;
+        
+        // Only proceed if this is the active modal
+        if (targetId !== this.activeModal) {
+            console.warn(`Attempted to close inactive modal: ${targetId}`);
+            return;
+        }
+        
+        // Hide the modal
+        modal.classList.add('hidden');
+        modal.classList.remove('active');
+        
+        // Release focus trap
+        if (typeof FocusTrap !== 'undefined' && FocusTrap.releaseFocus) {
+            FocusTrap.releaseFocus();
+        }
+        
+        // Remove inert from background
+        const mainContent = document.getElementById('main-content');
+        const mainHeader = document.querySelector('.main-header');
+        const mainNav = document.querySelector('.main-nav');
+        const mainFooter = document.querySelector('.main-footer');
+        
+        if (mainContent) mainContent.removeAttribute('inert');
+        if (mainHeader) mainHeader.removeAttribute('inert');
+        if (mainNav) mainNav.removeAttribute('inert');
+        if (mainFooter) mainFooter.removeAttribute('inert');
+        
+        // Unlock body scroll
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.classList.remove('modal-open');
+        window.scrollTo(0, this.scrollPosition);
+        
+        // Restore focus if not skipped
+        if (!options.skipFocusRestore && this.previousFocus) {
+            try {
+                if (this.previousFocus && typeof this.previousFocus.focus === 'function') {
+                    this.previousFocus.focus();
+                }
+            } catch (e) {
+                console.warn('Could not restore focus:', e);
+            }
+        }
+        
+        // Clear state
+        this.activeModal = null;
+        this.previousFocus = null;
+        
+        // Announce to screen reader
+        const announcement = options.announcement || `${targetId.replace('-', ' ')} dialog closed`;
+        announceToScreenReader(announcement);
+        
+        // Call close callback if provided
+        if (options.onClose) {
+            options.onClose(modal);
+        }
+    },
+    
+    // Close the currently active modal
+    closeActive() {
+        if (this.activeModal) {
+            this.close(this.activeModal);
+        }
+    },
+    
+    // Check if a modal is currently open
+    isOpen(modalId) {
+        return this.activeModal === modalId;
+    },
+    
+    // Set pending action for auth flow
+    setPendingAction(action, data = null) {
+        this.pendingAction = { action, data, timestamp: Date.now() };
+    },
+    
+    // Get and clear pending action
+    consumePendingAction() {
+        const action = this.pendingAction;
+        this.pendingAction = null;
+        return action;
+    }
+};
+
 // Keyboard shortcuts manager
 const keyboardManager = {
     // Check if we should handle keyboard shortcuts
@@ -243,6 +416,13 @@ const keyboardManager = {
     
     // Handle Escape key context-aware behavior
     handleEscape(event) {
+        // If any modal is open, close it first
+        if (modalManager.activeModal) {
+            event.preventDefault();
+            modalManager.closeActive();
+            return;
+        }
+        
         const searchInput = document.getElementById('search-input');
         const activeElement = document.activeElement;
         
@@ -252,14 +432,6 @@ const keyboardManager = {
             searchInput.value = '';
             updateFilterState({ search: '' });
             announceToScreenReader('Search cleared');
-            return;
-        }
-        
-        // If any modal is open, close it
-        const openModal = document.querySelector('.modal:not(.hidden), .modal-overlay:not(.hidden)');
-        if (openModal) {
-            event.preventDefault();
-            closeModal();
             return;
         }
         
@@ -298,35 +470,18 @@ const keyboardManager = {
     
     // Show keyboard help modal
     showKeyboardHelp() {
-        const modal = document.getElementById('keyboard-help-modal');
-        if (modal) {
-            modal.classList.remove('hidden');
-            modal.style.display = 'flex';
-            
-            // Focus the close button for accessibility
-            const closeBtn = modal.querySelector('.modal-close');
-            if (closeBtn) {
-                closeBtn.focus();
-            }
-            
-            // Set up focus trap and keyboard support
-            FocusTrap.trapFocus(modal);
-            announceToScreenReader('Keyboard shortcuts dialog opened');
-        }
+        modalManager.open('keyboard-help-modal', {
+            announcement: 'Keyboard shortcuts dialog opened',
+            labelledBy: 'keyboard-help-title'
+        });
     }
 };
 
 // Close keyboard help modal
 function closeKeyboardHelp() {
-    const modal = document.getElementById('keyboard-help-modal');
-    if (modal) {
-        modal.classList.add('hidden');
-        modal.style.display = 'none';
-        
-        // Release focus trap
-        FocusTrap.releaseFocus();
-        announceToScreenReader('Keyboard shortcuts dialog closed');
-    }
+    modalManager.close('keyboard-help-modal', {
+        announcement: 'Keyboard shortcuts dialog closed'
+    });
 };
 
 // Global keyboard event handler
@@ -1064,8 +1219,34 @@ const ApiClient = {
                 console.warn('Authentication failed - token may be expired');
                 this.clearAuth();
                 
-                // Show authentication prompt
-                if (typeof showAuthenticationModal === 'function') {
+                // Don't auto-show modal if migration is in progress
+                const isMigrationActive = modalManager.isOpen('migration-modal');
+                
+                if (isMigrationActive) {
+                    // Set pending action and show inline message in migration modal
+                    modalManager.setPendingAction('migration');
+                    
+                    // Update migration status to show auth needed
+                    const statusEl = document.getElementById('migration-status');
+                    if (statusEl) {
+                        statusEl.textContent = 'Authentication required. Please log in to continue migration.';
+                        statusEl.className = 'error';
+                    }
+                    
+                    // Add a login button to migration modal if not already there
+                    const migrationProgress = document.getElementById('migration-progress');
+                    if (migrationProgress && !migrationProgress.querySelector('.auth-required-btn')) {
+                        const authBtn = document.createElement('button');
+                        authBtn.className = 'btn-primary auth-required-btn';
+                        authBtn.textContent = 'Log in to Continue';
+                        authBtn.onclick = () => {
+                            modalManager.close('migration-modal', { skipFocusRestore: true });
+                            showAuthenticationModal();
+                        };
+                        migrationProgress.appendChild(authBtn);
+                    }
+                } else if (typeof showAuthenticationModal === 'function') {
+                    // Normal flow - show auth modal
                     showAuthenticationModal();
                 }
                 
@@ -1206,24 +1387,19 @@ const ApiClient = {
 
 // Authentication UI Management
 function showAuthenticationModal() {
-    const modal = document.getElementById('auth-modal');
-    modal.classList.remove('hidden');
+    modalManager.open('auth-modal', {
+        announcement: 'Authentication dialog opened',
+        labelledBy: 'auth-title'
+    });
     document.getElementById('auth-register').classList.remove('hidden');
     document.getElementById('auth-login').classList.add('hidden');
     document.getElementById('auth-loading').classList.add('hidden');
-    
-    // Set up focus trap and keyboard support
-    FocusTrap.trapFocus(modal);
-    announceToScreenReader('Authentication dialog opened');
 }
 
 function hideAuthenticationModal() {
-    const modal = document.getElementById('auth-modal');
-    modal.classList.add('hidden');
-    
-    // Release focus trap
-    FocusTrap.releaseFocus();
-    announceToScreenReader('Authentication dialog closed');
+    modalManager.close('auth-modal', {
+        announcement: 'Authentication dialog closed'
+    });
 }
 
 function switchToLogin() {
@@ -1246,24 +1422,19 @@ function showAuthLoading() {
 
 // Migration UI Management
 function showMigrationModal() {
-    const modal = document.getElementById('migration-modal');
-    modal.classList.remove('hidden');
+    modalManager.open('migration-modal', {
+        announcement: 'Data migration dialog opened',
+        labelledBy: 'migration-title'
+    });
     document.getElementById('migration-intro').classList.remove('hidden');
     document.getElementById('migration-progress').classList.add('hidden');
     document.getElementById('migration-complete').classList.add('hidden');
-    
-    // Set up focus trap and keyboard support
-    FocusTrap.trapFocus(modal);
-    announceToScreenReader('Data migration dialog opened');
 }
 
 function hideMigrationModal() {
-    const modal = document.getElementById('migration-modal');
-    modal.classList.add('hidden');
-    
-    // Release focus trap
-    FocusTrap.releaseFocus();
-    announceToScreenReader('Data migration dialog closed');
+    modalManager.close('migration-modal', {
+        announcement: 'Data migration dialog closed'
+    });
 }
 
 function showMigrationProgress() {
@@ -1377,9 +1548,29 @@ async function handleRegistration(event) {
     const result = await ApiClient.registerUser(userName.trim());
     
     if (result.success) {
-        hideAuthenticationModal();
-        updateUserStatus();
-        await loadAllData(); // Reload data with authentication
+        // Check if there's a pending migration
+        const pendingAction = modalManager.consumePendingAction();
+        
+        if (pendingAction && pendingAction.action === 'migration') {
+            // Close auth modal and restart migration
+            hideAuthenticationModal();
+            
+            // Show migration modal and auto-start
+            modalManager.open('migration-modal', {
+                announcement: 'Resuming data migration',
+                labelledBy: 'migration-title'
+            });
+            
+            // Start migration after brief delay
+            setTimeout(() => {
+                startMigration();
+            }, 500);
+        } else {
+            // Normal auth flow
+            hideAuthenticationModal();
+            updateUserStatus();
+            await loadAllData(); // Reload data with authentication
+        }
     } else {
         // Show error and return to registration form
         switchToRegister();
@@ -1403,9 +1594,29 @@ async function handleLogin(event) {
     const result = await ApiClient.loginUser(userId.trim());
     
     if (result.success) {
-        hideAuthenticationModal();
-        updateUserStatus();
-        await loadAllData(); // Reload data with authentication
+        // Check if there's a pending migration
+        const pendingAction = modalManager.consumePendingAction();
+        
+        if (pendingAction && pendingAction.action === 'migration') {
+            // Close auth modal and restart migration
+            hideAuthenticationModal();
+            
+            // Show migration modal and auto-start
+            modalManager.open('migration-modal', {
+                announcement: 'Resuming data migration',
+                labelledBy: 'migration-title'
+            });
+            
+            // Start migration after brief delay
+            setTimeout(() => {
+                startMigration();
+            }, 500);
+        } else {
+            // Normal auth flow
+            hideAuthenticationModal();
+            updateUserStatus();
+            await loadAllData(); // Reload data with authentication
+        }
     } else {
         // Show error and return to login form
         switchToLogin();
@@ -1415,6 +1626,34 @@ async function handleLogin(event) {
 
 // Migration handlers
 async function startMigration() {
+    // Check if authenticated first
+    if (!ApiClient.isAuthenticated) {
+        // Store migration intent
+        modalManager.setPendingAction('migration');
+        
+        // Add message to auth modal
+        const authMessage = document.createElement('div');
+        authMessage.id = 'auth-message';
+        authMessage.className = 'auth-message info';
+        authMessage.textContent = 'Please log in or create an account to migrate your local data to the cloud.';
+        
+        const authModal = document.getElementById('auth-modal');
+        const modalContent = authModal?.querySelector('.modal-content');
+        if (modalContent && !document.getElementById('auth-message')) {
+            modalContent.insertBefore(authMessage, modalContent.firstChild.nextSibling);
+        }
+        
+        // Close migration modal and show auth modal
+        modalManager.close('migration-modal', { skipFocusRestore: true });
+        modalManager.open('auth-modal', {
+            announcement: 'Please log in to migrate your data to the cloud',
+            labelledBy: 'auth-title'
+        });
+        
+        return;
+    }
+    
+    // If authenticated, proceed with migration
     showMigrationProgress();
     
     const statusEl = document.getElementById('migration-status');
@@ -1593,23 +1832,17 @@ function handleGlobalClick(event) {
 function handleGlobalKeydown(event) {
     // Handle Esc key to close modals
     if (event.key === 'Escape') {
-        // Check which modal is open and close it
-        const authModal = document.getElementById('auth-modal');
-        const migrationModal = document.getElementById('migration-modal');
-        
-        if (authModal && !authModal.classList.contains('hidden')) {
+        // Use modalManager for all modal closing
+        if (modalManager.activeModal) {
             event.preventDefault();
-            hideAuthenticationModal();
-        } else if (migrationModal && !migrationModal.classList.contains('hidden')) {
-            event.preventDefault();
-            hideMigrationModal();
+            modalManager.closeActive();
+        } else {
+            // Close any custom modals (like about dialog) that aren't managed
+            const customModals = document.querySelectorAll('.modal[style*="block"]');
+            customModals.forEach(modal => {
+                modal.remove();
+            });
         }
-        
-        // Close any custom modals (like about dialog)
-        const customModals = document.querySelectorAll('.modal[style*="block"]');
-        customModals.forEach(modal => {
-            modal.remove();
-        });
     }
 }
 

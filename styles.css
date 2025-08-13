@@ -725,6 +725,19 @@ body {
     display: none !important;
 }
 
+/* Active modal has higher z-index */
+.modal-overlay.active {
+    display: flex !important;
+    z-index: 1001;
+}
+
+/* Body scroll lock when modal is open */
+body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+}
+
 .modal-content {
     position: absolute;
     top: 50%;
@@ -1393,6 +1406,22 @@ body {
 .auth-modal {
     max-width: 450px;
     width: 90%;
+}
+
+.auth-message {
+    padding: 1rem;
+    margin: 1rem;
+    border-radius: var(--border-radius);
+    background: var(--info-color-bg);
+    color: var(--info-color);
+    border: 1px solid var(--info-color);
+    text-align: center;
+}
+
+.auth-message.info {
+    background: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+    border-color: #007bff;
 }
 
 .auth-form {
