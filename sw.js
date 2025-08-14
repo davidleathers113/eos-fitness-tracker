@@ -1,15 +1,20 @@
 // EOS Fitness Tracker - Service Worker
 // Implements comprehensive caching strategy for PWA functionality
 
-const CACHE_NAME = 'eos-fitness-tracker-v1';
-const DYNAMIC_CACHE_NAME = 'eos-fitness-dynamic-v1';
+const CACHE_NAME = 'eos-fitness-tracker-v3';
+const DYNAMIC_CACHE_NAME = 'eos-fitness-dynamic-v3';
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
     '/',
     '/index.html',
-    '/app.js',
-    '/styles.css',
+    '/src/app/index.js',
+    '/styles/tokens.css?v=2.1.0',
+    '/styles/base.css?v=2.1.0',
+    '/styles/layout.css?v=2.1.0',
+    '/styles/components.css?v=2.1.0',
+    '/styles/features.css?v=2.1.0',
+    '/styles/pwa.css?v=2.1.0',
     '/manifest.json',
     '/database/equipment-database.json',
     // Fallback offline page
