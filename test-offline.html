@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Offline Mode Test</title>
+</head>
+<body>
+    <h1>Testing Offline Mode</h1>
+    <div id="results"></div>
+    <script>
+        async function testOfflineMode() {
+            const results = document.getElementById('results');
+            let html = '<h2>Test Results:</h2><ul>';
+            
+            // Check if Service Worker is registered
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                html += `<li>✅ Service Worker registered: ${registrations.length > 0}</li>`;
+                
+                if (registrations.length > 0) {
+                    const reg = registrations[0];
+                    html += `<li>✅ SW Scope: ${reg.scope}</li>`;
+                    html += `<li>✅ SW Active: ${reg.active ? reg.active.state : 'not active'}</li>`;
+                }
+            } else {
+                html += '<li>❌ Service Worker not supported</li>';
+            }
+            
+            // Check if caches exist
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                html += `<li>✅ Caches found: ${cacheNames.length}</li>`;
+                html += `<li>Cache names: ${cacheNames.join(', ')}</li>`;
+                
+                // Check if our CSS files are cached
+                const cssFiles = [
+                    '/styles/tokens.css?v=2.1.0',
+                    '/styles/base.css?v=2.1.0',
+                    '/styles/layout.css?v=2.1.0',
+                    '/styles/components.css?v=2.1.0',
+                    '/styles/features.css?v=2.1.0',
+                    '/styles/pwa.css?v=2.1.0'
+                ];
+                
+                for (const file of cssFiles) {
+                    let found = false;
+                    for (const cacheName of cacheNames) {
+                        const cache = await caches.open(cacheName);
+                        const response = await cache.match(file);
+                        if (response) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    html += `<li>${found ? '✅' : '❌'} ${file} ${found ? 'cached' : 'NOT cached'}</li>`;
+                }
+                
+                // Check offline.html
+                let offlineFound = false;
+                for (const cacheName of cacheNames) {
+                    const cache = await caches.open(cacheName);
+                    const response = await cache.match('/offline.html');
+                    if (response) {
+                        offlineFound = true;
+                        break;
+                    }
+                }
+                html += `<li>${offlineFound ? '✅' : '❌'} /offline.html ${offlineFound ? 'cached' : 'NOT cached'}</li>`;
+                
+            } else {
+                html += '<li>❌ Cache API not supported</li>';
+            }
+            
+            // Check network status
+            html += `<li>Network status: ${navigator.onLine ? 'ONLINE' : 'OFFLINE'}</li>`;
+            
+            html += '</ul>';
+            html += '<p><strong>To test offline mode:</strong> Open DevTools > Network tab > Set to Offline, then refresh the page.</p>';
+            results.innerHTML = html;
+        }
+        
+        testOfflineMode();
+    </script>
+</body>
+</html>
