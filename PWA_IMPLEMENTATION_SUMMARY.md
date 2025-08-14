@@ -68,8 +68,8 @@ Successfully implemented comprehensive Progressive Web App (PWA) functionality f
 - Added `updateOfflineStatus()`: Real-time offline status updates
 - Initialization now includes offline status setup
 
-### 7. Enhanced `styles.css`
-**New PWA Styles Added**:
+### 7. Modular CSS Architecture
+**PWA Styles in `styles/pwa.css`**:
 - **Offline Indicators**: Visual cues when app is offline
 - **Sync Status Animations**: Pulsing indicators for sync state
 - **PWA Standalone Mode**: Proper styling for installed app

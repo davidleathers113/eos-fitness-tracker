@@ -20,7 +20,13 @@ A comprehensive, secure gym equipment tracking system for EOS Fitness Lutz, Flor
 eos-fitness-tracker/
 ├── index.html                    # Main web application interface  
 ├── app.js                        # Frontend application logic
-├── styles.css                    # Application styling
+├── styles/                       # Modular CSS architecture
+│   ├── tokens.css               # Design tokens and themes
+│   ├── base.css                 # Reset and typography
+│   ├── layout.css               # Page layout and structure
+│   ├── components.css           # Reusable UI components
+│   ├── features.css             # Feature-specific styles
+│   └── pwa.css                  # PWA and offline styles
 ├── netlify/functions/            # Serverless API Backend
 │   ├── _shared/                  # Shared utilities
 │   │   ├── auth.js               # HMAC authentication & rate limiting
