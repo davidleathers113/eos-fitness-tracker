@@ -1,0 +1,211 @@
+/* EOS Fitness Tracker - Base Styles */
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--surface-primary);
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-relaxed);
+    font-weight: var(--font-weight-normal);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ======== Typography System ======== */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-tight);
+    color: var(--text-primary);
+    margin: 0;
+}
+
+h1 {
+    font-size: var(--font-size-3xl);
+    line-height: 1.3;
+}
+
+h2 {
+    font-size: var(--font-size-2xl);
+    line-height: 1.4;
+}
+
+h3 {
+    font-size: var(--font-size-xl);
+    line-height: 1.5;
+}
+
+p {
+    margin: 0;
+    line-height: var(--line-height-relaxed);
+}
+
+small {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+/* ======== Focus States ======== */
+:focus {
+    outline: none;
+}
+
+:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+
+/* Ensure minimum touch target size */
+button, a, input, select, textarea {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.link-button {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    text-decoration: none;
+    cursor: pointer;
+    font-size: inherit;
+    font-family: inherit;
+    padding: 0;
+    margin: 0;
+}
+
+.link-button:hover {
+    text-decoration: underline;
+}
+
+/* Enhanced Focus Indicators for Accessibility */
+button:focus,
+input:focus,
+textarea:focus,
+select:focus,
+.link-button:focus,
+.nav-btn:focus,
+.filter-btn:focus,
+.equipment-header[role="button"]:focus,
+.filter-chip:focus,
+.clear-all-btn:focus {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Ensure clear focus order for equipment cards */
+.equipment-card {
+    position: relative;
+}
+
+.equipment-header[role="button"]:focus {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+    background-color: rgba(255, 107, 53, 0.05);
+}
+
+/* Skip to main content link (hidden by default, shown on focus) */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--primary-color);
+    color: var(--text-light);
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: 1000;
+    transition: top 0.3s;
+}
+
+.skip-link:focus {
+    top: 6px;
+}
+
+/* Ensure focus is visible even when button has background */
+.btn-primary:focus,
+.btn-secondary:focus,
+.btn-danger:focus {
+    outline: 3px solid var(--text-light);
+    outline-offset: 2px;
+}
+
+/* Focus for modal close buttons */
+.modal-close:focus {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+    background-color: rgba(255, 107, 53, 0.1);
+}
+
+/* Ensure high contrast focus indicators */
+@media (prefers-contrast: high) {
+    button:focus,
+    input:focus,
+    textarea:focus,
+    select:focus {
+        outline: 4px solid currentColor;
+        outline-offset: 2px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .main-nav,
+    .filters-section,
+    .equipment-actions,
+    .modal,
+    .notification,
+    .status-bar,
+    .main-footer,
+    .auth-modal,
+    .migration-modal,
+    .user-status {
+        display: none !important;
+    }
+    
+    .equipment-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    
+    body {
+        background: white;
+        color: black;
+    }
+}

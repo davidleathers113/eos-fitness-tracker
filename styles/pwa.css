@@ -1,0 +1,285 @@
+/* EOS Fitness Tracker - PWA Styles */
+
+/* PWA and Offline Styles */
+
+/* Enhanced sync indicator styles */
+.sync-indicator {
+    font-size: 0.7rem;
+    transition: var(--transition);
+    animation: pulse 2s infinite;
+}
+
+.sync-indicator.online {
+    color: var(--success-color);
+    animation: none;
+}
+
+.sync-indicator.offline {
+    color: var(--warning-color);
+    animation: pulse-warning 3s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    25%, 75% { opacity: 0.7; }
+    50% { opacity: 0.4; }
+}
+
+/* Offline mode body styling */
+.is-offline {
+    position: relative;
+}
+
+.is-offline::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(
+        90deg, 
+        var(--warning-color) 0%, 
+        var(--danger-color) 50%, 
+        var(--warning-color) 100%
+    );
+    z-index: 10000;
+    animation: offline-bar 4s linear infinite;
+}
+
+@keyframes offline-bar {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Offline notification styles */
+.notification.offline {
+    background: linear-gradient(45deg, var(--warning-color), #f39c12);
+    border-left-color: var(--danger-color);
+}
+
+.notification.sync-pending {
+    background: linear-gradient(45deg, var(--info-color), #3498db);
+    border-left-color: var(--primary-color);
+}
+
+/* PWA install prompt styles */
+.notification.install-prompt {
+    background: linear-gradient(45deg, var(--primary-color), #e74c3c);
+    color: white;
+}
+
+.notification.install-prompt .notification-actions {
+    margin-top: 0.75rem;
+}
+
+.notification.install-prompt .notification-action {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-right: 0.5rem;
+}
+
+.notification.install-prompt .notification-action:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Enhanced sync status in header */
+.sync-status {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: var(--transition);
+    cursor: help;
+}
+
+.sync-status:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.sync-text {
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.75rem;
+}
+
+/* PWA standalone mode adjustments */
+@media (display-mode: standalone) {
+    .main-header {
+        padding-top: env(safe-area-inset-top, 0);
+    }
+    
+    .main-content {
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0));
+    }
+    
+    /* Add subtle indicator that app is installed */
+    .main-header::after {
+        content: '●';
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        color: var(--success-color);
+        font-size: 0.6rem;
+        opacity: 0.7;
+    }
+}
+
+/* iOS PWA adjustments */
+@media (display-mode: standalone) and (-webkit-touch-callout: none) {
+    .main-header {
+        background: var(--bg-dark);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+}
+
+/* Offline equipment cards styling */
+.is-offline .equipment-card {
+    position: relative;
+    border-left: 3px solid var(--warning-color);
+}
+
+.is-offline .equipment-card::after {
+    content: '📴';
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    font-size: 0.8rem;
+    opacity: 0.6;
+}
+
+/* Queue status indicator */
+.queue-indicator {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    background: var(--warning-color);
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-md);
+    z-index: 1000;
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.queue-indicator:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.queue-indicator.processing {
+    background: var(--info-color);
+    animation: pulse-process 1.5s infinite;
+}
+
+@keyframes pulse-process {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Service Worker update notification */
+.sw-update-notification {
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    background: var(--primary-color);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from { 
+        transform: translateY(100%); 
+        opacity: 0; 
+    }
+    to { 
+        transform: translateY(0); 
+        opacity: 1; 
+    }
+}
+
+.sw-update-notification .update-icon {
+    font-size: 1.5rem;
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive PWA adjustments */
+@media (max-width: 768px) {
+    .is-offline::before {
+        height: 2px;
+    }
+    
+    .sync-status {
+        font-size: 0.75rem;
+    }
+    
+    .queue-indicator {
+        bottom: 0.5rem;
+        right: 0.5rem;
+        padding: 0.4rem 0.6rem;
+        font-size: 0.75rem;
+    }
+    
+    @media (display-mode: standalone) {
+        .main-nav {
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .sync-indicator.offline {
+        color: var(--danger-color);
+        font-weight: bold;
+    }
+    
+    .is-offline .equipment-card {
+        border-left-width: 4px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .sync-indicator,
+    .queue-indicator,
+    .sw-update-notification .update-icon {
+        animation: none !important;
+    }
+    
+    .is-offline::before {
+        animation: none !important;
+        background: var(--warning-color);
+    }
+}
